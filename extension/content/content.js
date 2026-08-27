@@ -98,10 +98,136 @@ OTU.content = (function () {
   }
 
   function onOpen() {
+    if (tab === 'convert') return openTab('convert');
     if (!plan) scan();
   }
 
   function rescan() { scan(); }
+
+  /* ------------------------------------------------------- convert venue */
+
+  let tab = 'update';
+  let conv = null;
+
+  function freshConvertState() {
+    return {
+      entries: null, selectedPath: null, className: null,
+      source: null, targets: [], targetId: null,
+      result: null, error: null, exists: false,
+    };
+  }
+
+  /** The project inventory, reusing the update scan's copy if there is one. */
+  async function inventory() {
+    if (plan && plan.files) return plan.files;
+    if (conv && conv.files) return conv.files;
+    const files = await OTU.planner.buildInventory((m) => OTU.ui.subtitle(m));
+    conv.files = files;
+    return files;
+  }
+
+  async function openTab(name) {
+    tab = name;
+    OTU.ui.setTab(name);
+
+    if (name === 'update') {
+      if (plan) OTU.ui.renderPlan(plan);
+      else scan();
+      return;
+    }
+
+    if (!conv) conv = freshConvertState();
+    if (conv.entries) return OTU.ui.renderConvert(conv);
+
+    OTU.ui.setBusy(true);
+    OTU.ui.showSkeleton();
+    try {
+      const files = await inventory();
+      conv.files = files;
+      conv.entries = await OTU.convert.candidates(files);
+      if (conv.entries.length) await selectConvertSource(conv.entries[0].file.path);
+      else OTU.ui.renderConvert(conv);
+      OTU.ui.subtitle('convert venue');
+    } catch (err) {
+      console.error('[Template Updater] convert setup failed', err);
+      conv.error = err.message;
+      OTU.ui.renderConvert(conv);
+    } finally {
+      OTU.ui.setBusy(false);
+    }
+  }
+
+  async function selectConvertSource(path) {
+    const entry = conv.entries.find((e) => e.file.path === path);
+    if (!entry) return;
+
+    conv.selectedPath = path;
+    conv.className = entry.className;
+    conv.result = null;
+    conv.targetId = null;
+    conv.exists = false;
+
+    const { source, targets } = await OTU.convert.targetsFor(entry.className);
+    conv.source = source;
+    conv.targets = targets;
+    OTU.ui.renderConvert(conv);
+  }
+
+  async function selectConvertTarget(venueId) {
+    const entry = conv.entries.find((e) => e.file.path === conv.selectedPath);
+    if (!entry) return;
+
+    conv.targetId = venueId;
+    OTU.ui.setBusy(true);
+    try {
+      conv.result = await OTU.convert.run(entry, venueId);
+      conv.exists = OTU.convert.existsInProject(conv.files, conv.result.outPath);
+      conv.error = null;
+    } catch (err) {
+      console.error('[Template Updater] convert failed', err);
+      conv.result = null;
+      conv.error = err.message;
+    } finally {
+      OTU.ui.setBusy(false);
+    }
+    OTU.ui.renderConvert(conv);
+  }
+
+  async function applyConvert() {
+    if (!conv || !conv.result) return;
+
+    // Creating a file is additive, so it needs no confirmation. Replacing an
+    // existing one does.
+    if (conv.exists && !window.confirm(
+      `${conv.result.outPath} already exists and will be replaced.\n\n` +
+      `Overleaf keeps the previous version in its History panel, so this can ` +
+      `be undone there. Continue?`
+    )) return;
+
+    OTU.ui.setConvertEnabled(false, 'Creating…');
+    OTU.ui.setBusy(true);
+    try {
+      await OTU.convert.apply(conv.result, conv.selectedPath, (m) => OTU.ui.subtitle(m));
+      OTU.ui.subtitle('created');
+      OTU.ui.renderConvertResult(conv.result, conv.result.outPath);
+      plan = null;   // the project gained a file; the update scan is stale
+      conv.files = null;
+      conv.entries = null;
+    } catch (err) {
+      console.error('[Template Updater] convert apply failed', err);
+      OTU.ui.subtitle('Failed');
+      OTU.ui.showMessage('error', `Could not create the file: ${err.message}`);
+    } finally {
+      OTU.ui.setBusy(false);
+    }
+  }
+
+  function resetConvert() {
+    const files = conv && conv.files;
+    conv = freshConvertState();
+    conv.files = files;
+    openTab('convert');
+  }
 
   /** Open the panel from the toolbar popup. */
   function openPanel() {
@@ -122,6 +248,8 @@ OTU.content = (function () {
     if (id && id !== mountedFor) {
       mountedFor = id;
       plan = null;              // a different project needs a fresh scan
+      conv = null;
+      tab = 'update';
       OTU.ui.mount();
     } else if (!id && mountedFor) {
       mountedFor = null;        // navigated back out to the dashboard
@@ -144,5 +272,8 @@ OTU.content = (function () {
     return false;
   });
 
-  return { onOpen, rescan, applySelected, scan, openPanel };
+  return {
+    onOpen, rescan, applySelected, scan, openPanel,
+    openTab, selectConvertSource, selectConvertTarget, applyConvert, resetConvert,
+  };
 })();

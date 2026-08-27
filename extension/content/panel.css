@@ -560,3 +560,115 @@
 @media (prefers-reduced-motion: reduce) {
   #otu-root, #otu-root * { animation: none !important; transition: none !important; }
 }
+
+/* ------------------------------------------------------------------- tabs */
+
+#otu-root .otu-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--otu-line);
+  background: var(--otu-bg);
+}
+#otu-root .otu-tab {
+  position: relative;
+  padding: 9px 12px 10px;
+  border: none;
+  background: none;
+  font-family: var(--otu-sans);
+  font-size: 12.5px;
+  font-weight: 550;
+  letter-spacing: -.005em;
+  color: var(--otu-dim);
+  cursor: pointer;
+  transition: color .14s ease;
+}
+#otu-root .otu-tab:hover { color: var(--otu-text); }
+#otu-root .otu-tab[aria-selected="true"] { color: var(--otu-text); font-weight: 650; }
+#otu-root .otu-tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  left: 10px; right: 10px; bottom: -1px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--otu-acc);
+}
+
+/* --------------------------------------------------------- convert controls */
+
+#otu-root .otu-field { margin-bottom: 14px; }
+#otu-root .otu-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--otu-faint);
+}
+#otu-root select.otu-select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--otu-r-sm);
+  border: 1px solid var(--otu-line);
+  background: var(--otu-raised);
+  color: var(--otu-text);
+  font-family: var(--otu-mono);
+  font-size: 12px;
+}
+#otu-root select.otu-select:focus-visible { outline: 2px solid var(--otu-acc); outline-offset: 1px; }
+
+#otu-root .otu-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  margin-bottom: 6px;
+  border: 1px solid var(--otu-line);
+  border-radius: var(--otu-r);
+  background: var(--otu-raised);
+  cursor: pointer;
+  font-family: var(--otu-sans);
+  color: var(--otu-text);
+  transition: border-color .14s ease, background .14s ease;
+}
+#otu-root .otu-choice:hover { border-color: color-mix(in srgb, var(--otu-text) 22%, transparent); }
+#otu-root .otu-choice[aria-pressed="true"] {
+  border-color: var(--otu-acc);
+  background: var(--otu-acc-soft);
+}
+#otu-root .otu-choice .otu-dot {
+  flex: none;
+  width: 15px; height: 15px;
+  margin-top: 2px;
+  border-radius: 99px;
+  border: 1.5px solid color-mix(in srgb, var(--otu-text) 28%, transparent);
+  display: grid; place-content: center;
+}
+#otu-root .otu-choice[aria-pressed="true"] .otu-dot {
+  border-color: var(--otu-acc);
+  background: var(--otu-acc);
+  box-shadow: inset 0 0 0 3px var(--otu-raised);
+}
+#otu-root .otu-choice-main { min-width: 0; }
+#otu-root .otu-choice-name { font-size: 12.5px; font-weight: 600; }
+#otu-root .otu-choice-sub { font-size: 11.5px; color: var(--otu-dim); margin-top: 2px; }
+
+#otu-root .otu-outfile {
+  font-family: var(--otu-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--otu-acc);
+}
+
+#otu-root .otu-list { margin: 6px 0 0; padding-left: 18px; font-size: 11.5px; }
+#otu-root .otu-list li { margin-bottom: 4px; }
+#otu-root .otu-list code {
+  font-family: var(--otu-mono);
+  font-size: 11px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}

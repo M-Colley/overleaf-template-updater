@@ -15,11 +15,11 @@ const ROOT = join(HERE, '..');
 const FIX = join(HERE, 'fixtures');
 const TMP = join(HERE, 'fixtures', '.venue-shift-tmp');
 
-import { Report } from '../cli/venues/ir.mjs';
-import * as latex from '../cli/venues/latex.mjs';
-import * as acmart from '../cli/venues/acmart.mjs';
-import * as elsarticle from '../cli/venues/elsarticle.mjs';
-import * as ieeetran from '../cli/venues/ieeetran.mjs';
+import { Report } from '../extension/lib/venues/ir.js';
+import * as latex from '../extension/lib/venues/latex.js';
+import * as acmart from '../extension/lib/venues/acmart.js';
+import * as elsarticle from '../extension/lib/venues/elsarticle.js';
+import * as ieeetran from '../extension/lib/venues/ieeetran.js';
 
 let pass = 0, fail = 0;
 const failures = [];

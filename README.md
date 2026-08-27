@@ -31,8 +31,9 @@ Three tools, for three situations.
 | **Setup** | load unpacked, click a button | one `otu init` per project |
 
 And when the venue itself changes — a CHI paper extended into an Elsevier
-journal submission — [`venue-shift`](#venue-shift--moving-a-paper-between-venues)
-converts the front matter and writes a new `.tex`, leaving your original alone.
+journal submission — the extension's **Convert venue** tab (and the matching
+[`venue-shift`](#venue-shift--moving-a-paper-between-venues) CLI) rewrites the
+front matter into a **new** `.tex`, leaving your original untouched.
 
 Use the extension for the common case — *"is my class file stale?"* Use the CLI
 when you also want the template's **boilerplate** changes — new preamble macros,
@@ -330,19 +331,41 @@ cut down for an ACM conference. The prose is the same. The front matter is
 entirely different furniture, and moving it by hand is a fiddly hour that is
 easy to get subtly wrong.
 
+Three venues, converting between any pair in either direction: **acmart**
+(CHI, CSCW, UIST, AutomotiveUI), **elsarticle** (Elsevier journals) and
+**IEEEtran** (IEEE conferences and transactions).
+
+It's available **both in the extension and as a CLI**, running the same code —
+the venue profiles live in [`extension/lib/venues/`](extension/lib/venues) and
+the CLI imports the very same files, so a conversion behaves identically
+whichever way you ran it.
+
+### In the extension
+
+Open the panel and switch to the **Convert venue** tab. Pick a source `.tex` and
+a target, and you get the migration report and a diff before anything is
+written.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/convert-dark.png">
+    <img src="docs/img/convert.png" width="560"
+         alt="The Convert venue tab. A source file dropdown showing main.tex with documentclass acmart, the detected template, a choice between Elsevier Article and IEEE Transactions, and a report: two items to fill in (journal name and research highlights), four dropped and preserved as comments, one thing worth checking, and three translated automatically. The footer says it creates a new file and the source .tex is never modified.">
+  </picture>
+</p>
+
+### From the command line
+
 ```bash
 node cli/venue-shift.mjs main.tex       --to elsarticle
 node cli/venue-shift.mjs paper.tex      --to ieeetran
 node cli/venue-shift.mjs submission.tex --to acmart
 ```
 
-Three venues, converting between any pair in either direction: **acmart**
-(CHI, CSCW, UIST, AutomotiveUI), **elsarticle** (Elsevier journals) and
-**IEEEtran** (IEEE conferences and transactions).
-
 Two rules make it safe to point at a real paper:
 
-1. **It never modifies your input.** It writes a new `.tex` beside it.
+1. **It never modifies your input.** It writes a new `.tex` beside it — in the
+   extension, a new file in the project; from the CLI, a new file on disk.
 2. **It never rewrites your body.** Everything between the front matter and
    `\end{document}` is copied byte-for-byte — with exactly one exception, the
    argument of `\bibliographystyle`, because leaving `ACM-Reference-Format` in an
@@ -496,7 +519,7 @@ PRs adding templates are welcome.
 npm test
 ```
 
-Four suites, 208 assertions:
+Four suites, 213 assertions:
 
 | Suite | Covers |
 |---|---|
@@ -519,7 +542,8 @@ Version comparison is component-wise so `2.20 > 2.9`, and suffix-aware so
 
 To work on the panel without loading the extension into Chrome, serve the repo
 and open `test/preview/index.html` (panel) or `test/preview/popup.html` (popup) —
-both render the real CSS and JS against mock data covering every state:
+`test/preview/convert.html` drives the real Convert-venue tab against a fixture
+project. All render the actual CSS and JS against mock data:
 
 ```bash
 python -m http.server 8731

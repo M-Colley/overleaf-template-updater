@@ -1,0 +1,4 @@
+{
+  "_comment": "Node-only. Marks this directory's .js files as ES modules so the CLI can import them, while Chrome still sees plain .js (which it reliably serves as JavaScript; .mjs MIME handling is less certain). Inert in the browser.",
+  "type": "module"
+}

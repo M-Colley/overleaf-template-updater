@@ -43,6 +43,7 @@
         "lib/diff.js",
         "lib/overleaf.js",
         "lib/planner.js",
+        "content/convert.js",
         "content/ui.js",
         "content/content.js"
       ]
@@ -52,7 +53,14 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "registry/templates.json"
+        "registry/templates.json",
+        "lib/venues/index.js",
+        "lib/venues/latex.js",
+        "lib/venues/ir.js",
+        "lib/venues/packages.js",
+        "lib/venues/acmart.js",
+        "lib/venues/elsarticle.js",
+        "lib/venues/ieeetran.js"
       ],
       "matches": [
         "https://www.overleaf.com/*",

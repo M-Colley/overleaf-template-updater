@@ -357,6 +357,36 @@ function buildProjectZip() {
     !/ctan\.org|githubusercontent|portalparts/.test(optionsHtml),
     'a hardcoded list would drift from background.js');
 
+  // The Convert-venue tab dynamically imports the venue profiles from an
+  // extension URL. That only works if every module in the graph is listed in
+  // web_accessible_resources, and a missing one fails at click time, not load
+  // time -- so it is worth asserting statically.
+  console.log('\nconvert tab wiring');
+  const mf = JSON.parse(fs.readFileSync(path.join(EXT, 'manifest.json'), 'utf8'));
+  const war = mf.web_accessible_resources[0].resources;
+
+  const venueDir = path.join(EXT, 'lib', 'venues');
+  const venueFiles = fs.readdirSync(venueDir).filter((f) => f.endsWith('.js'));
+  const unexposed = venueFiles.filter((f) => !war.includes(`lib/venues/${f}`));
+  ok('every venue module is web-accessible', unexposed.length === 0,
+    'missing from web_accessible_resources: ' + unexposed.join(', '));
+
+  ok('convert.js is a content script',
+    mf.content_scripts[0].js.includes('content/convert.js'));
+
+  const convertSrc = fs.readFileSync(path.join(EXT, 'content', 'convert.js'), 'utf8');
+  const imported = convertSrc.match(/getURL\('([^']+)'\)/);
+  ok('convert.js imports a module that is actually exposed',
+    imported && war.includes(imported[1]), imported && imported[1]);
+
+  // .mjs is not reliably served as JavaScript; .js is. A module served with the
+  // wrong MIME type is refused by the browser, which is how this first broke.
+  ok('venue modules use .js, not .mjs',
+    !venueFiles.some((f) => f.endsWith('.mjs')) &&
+    !fs.readdirSync(venueDir).some((f) => f.endsWith('.mjs')));
+  ok('a scoped package.json marks them as ES modules for Node',
+    JSON.parse(fs.readFileSync(path.join(venueDir, 'package.json'), 'utf8')).type === 'module');
+
   console.log('\nmanifest covers the hosts Overleaf actually uses');
   const manifest = JSON.parse(
     fs.readFileSync(path.join(EXT, 'manifest.json'), 'utf8'));

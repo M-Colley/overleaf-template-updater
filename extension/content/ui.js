@@ -49,8 +49,12 @@ OTU.ui = (function () {
           </div>
           <button class="otu-close" title="Close" aria-label="Close">&times;</button>
         </div>
+        <div class="otu-tabs" role="tablist">
+          <button class="otu-tab" data-tab="update" role="tab" aria-selected="true">Update template</button>
+          <button class="otu-tab" data-tab="convert" role="tab" aria-selected="false">Convert venue</button>
+        </div>
         <div class="otu-body" id="otu-body"></div>
-        <div class="otu-foot">
+        <div class="otu-foot" data-foot="update">
           <label>
             <input type="checkbox" id="otu-backup" checked>
             <span>Download a .zip backup before applying</span>
@@ -58,6 +62,16 @@ OTU.ui = (function () {
           <div class="otu-buttons">
             <button class="otu-secondary" id="otu-rescan">Rescan</button>
             <button class="otu-primary" id="otu-apply" disabled>Apply updates</button>
+          </div>
+        </div>
+        <div class="otu-foot" data-foot="convert" hidden>
+          <label style="cursor:default">
+            <span>Creates a <strong>new file</strong> in the project. Your source
+            <code>.tex</code> is never modified.</span>
+          </label>
+          <div class="otu-buttons">
+            <button class="otu-secondary" id="otu-convert-reset">Start over</button>
+            <button class="otu-primary" id="otu-convert-apply" disabled>Create file</button>
           </div>
         </div>
       </aside>`);
@@ -73,6 +87,12 @@ OTU.ui = (function () {
     panel.querySelector('.otu-close').addEventListener('click', closePanel);
     panel.querySelector('#otu-rescan').addEventListener('click', () => OTU.content.rescan());
     panel.querySelector('#otu-apply').addEventListener('click', () => OTU.content.applySelected());
+    panel.querySelector('#otu-convert-reset').addEventListener('click', () => OTU.content.resetConvert());
+    panel.querySelector('#otu-convert-apply').addEventListener('click', () => OTU.content.applyConvert());
+
+    panel.querySelectorAll('.otu-tab').forEach((tab) => {
+      tab.addEventListener('click', () => OTU.content.openTab(tab.dataset.tab));
+    });
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !panel.hidden) closePanel();
@@ -371,8 +391,184 @@ OTU.ui = (function () {
     return cancel;
   }
 
+  /* ---------------------------------------------------------------- tabs */
+
+  function setTab(name) {
+    const r = root();
+    if (!r) return;
+    r.querySelectorAll('.otu-tab').forEach((t) => {
+      t.setAttribute('aria-selected', String(t.dataset.tab === name));
+    });
+    r.querySelectorAll('.otu-foot').forEach((f) => {
+      f.hidden = f.dataset.foot !== name;
+    });
+  }
+
+  function setConvertEnabled(on, label) {
+    const btn = document.getElementById('otu-convert-apply');
+    if (!btn) return;
+    btn.disabled = !on;
+    if (label) btn.textContent = label;
+  }
+
+  /* ------------------------------------------------------- convert pane */
+
+  function reportSections(report) {
+    const out = [];
+    const li = (items, fmt) =>
+      `<ul class="otu-list">${items.map(fmt).join('')}</ul>`;
+
+    if (report.todo.length) {
+      out.push(
+        `<div class="otu-warn"><strong>You must fill these in ` +
+        `(${report.todo.length})</strong> — each is marked ` +
+        `<code>TODO-venue-shift</code> in the new file.` +
+        li(report.todo, (t) => `<li><strong>${esc(t.what)}</strong> — ${esc(t.why)}</li>`) +
+        `</div>`
+      );
+    }
+    if (report.dropped.length) {
+      out.push(
+        `<div class="otu-status"><strong>Dropped (${report.dropped.length})</strong> — ` +
+        `nothing was deleted; each is preserved as a comment you can recover.` +
+        li(report.dropped, (d) => `<li>${esc(d.what)} — ${esc(d.why)}</li>`) +
+        `</div>`
+      );
+    }
+    if (report.warnings.length) {
+      out.push(
+        `<div class="otu-warn"><strong>Worth checking (${report.warnings.length})</strong>` +
+        li(report.warnings, (w) => `<li>${esc(w)}</li>`) + `</div>`
+      );
+    }
+    if (report.mapped.length) {
+      out.push(
+        `<div class="otu-status"><strong>Translated automatically ` +
+        `(${report.mapped.length})</strong>` +
+        li(report.mapped, (m) =>
+          `<li>${esc(m.what)}${m.detail ? ' — ' + esc(m.detail) : ''}</li>`) +
+        `</div>`
+      );
+    }
+    return out.join('');
+  }
+
+  /**
+   * @param {{entries, selectedPath, source, targets, targetId, result, error, exists}} s
+   */
+  function renderConvert(s) {
+    const parts = [];
+
+    if (s.error) {
+      body().innerHTML = `<div class="otu-error">${esc(s.error)}</div>`;
+      setConvertEnabled(false, 'Create file');
+      return;
+    }
+
+    if (!s.entries || !s.entries.length) {
+      body().innerHTML =
+        `<div class="otu-warn">No <code>.tex</code> file in this project has a ` +
+        `<code>\\documentclass</code>, so there is nothing to convert.</div>`;
+      setConvertEnabled(false, 'Create file');
+      return;
+    }
+
+    parts.push(
+      `<div class="otu-field"><span class="otu-label">Source file</span>` +
+      `<select class="otu-select" id="otu-src">` +
+      s.entries.map((e) =>
+        `<option value="${esc(e.file.path)}"${e.file.path === s.selectedPath ? ' selected' : ''}>` +
+        `${esc(e.file.path)} — \\documentclass{${esc(e.className)}}</option>`).join('') +
+      `</select></div>`
+    );
+
+    if (!s.source) {
+      parts.push(
+        `<div class="otu-warn"><code>\\documentclass{${esc(s.className || '?')}}</code> ` +
+        `is not a venue this tool knows. Supported: acmart, elsarticle, IEEEtran.</div>`
+      );
+      body().innerHTML = parts.join('');
+      wireConvert(s);
+      setConvertEnabled(false, 'Create file');
+      return;
+    }
+
+    parts.push(
+      `<div class="otu-status">Detected <strong>${esc(s.source.name)}</strong></div>`
+    );
+
+    parts.push(`<div class="otu-field"><span class="otu-label">Convert to</span>` +
+      s.targets.map((t) =>
+        `<button class="otu-choice" data-venue="${esc(t.id)}" ` +
+        `aria-pressed="${String(t.id === s.targetId)}">` +
+        `<span class="otu-dot"></span><span class="otu-choice-main">` +
+        `<span class="otu-choice-name">${esc(t.name)}</span></span></button>`).join('') +
+      `</div>`);
+
+    if (s.result) {
+      parts.push(
+        `<div class="otu-status">Will create ` +
+        `<span class="otu-outfile">${esc(s.result.outPath)}</span>` +
+        (s.exists
+          ? `<br><strong>That file already exists</strong> and will be replaced. ` +
+            `Overleaf keeps the previous version in its History panel.`
+          : '') +
+        `</div>`
+      );
+      parts.push(reportSections(s.result.report));
+      parts.push(
+        `<div class="otu-item"><div class="otu-actions" style="padding:11px 13px">` +
+        `<button class="otu-link" data-role="convdiff">Show what changes</button>` +
+        `</div><div data-role="convdiffhost"></div></div>`
+      );
+    }
+
+    body().innerHTML = parts.join('');
+    wireConvert(s);
+
+    setConvertEnabled(
+      !!s.result,
+      s.result ? `Create ${s.result.outName}` : 'Create file'
+    );
+  }
+
+  function wireConvert(s) {
+    const src = document.getElementById('otu-src');
+    if (src) src.addEventListener('change', () => OTU.content.selectConvertSource(src.value));
+
+    body().querySelectorAll('.otu-choice').forEach((btn) => {
+      btn.addEventListener('click', () => OTU.content.selectConvertTarget(btn.dataset.venue));
+    });
+
+    const diffBtn = body().querySelector('[data-role=convdiff]');
+    if (diffBtn) diffBtn.addEventListener('click', () => {
+      const host = body().querySelector('[data-role=convdiffhost]');
+      if (host.innerHTML) {
+        host.innerHTML = '';
+        diffBtn.textContent = 'Show what changes';
+        return;
+      }
+      diffBtn.textContent = 'Computing…';
+      setTimeout(() => {
+        const entry = s.entries.find((e) => e.file.path === s.selectedPath);
+        host.innerHTML = renderDiff(OTU.diff.compare(entry.file.text, s.result.text));
+        diffBtn.textContent = 'Hide';
+      }, 0);
+    });
+  }
+
+  function renderConvertResult(res, outPath) {
+    body().innerHTML =
+      `<div class="otu-status"><strong>Created ` +
+      `<span class="otu-outfile">${esc(outPath)}</span></strong><br>` +
+      `Your source file was not modified. Open the new file in Overleaf's file ` +
+      `tree, fill in the <code>TODO-venue-shift</code> markers, and recompile.</div>`;
+    setConvertEnabled(false, 'Create file');
+  }
+
   return {
     mount, subtitle, showMessage, showSkeleton, setBusy,
     renderPlan, renderResults, closePanel, setApplyEnabled, backupWanted,
+    setTab, setConvertEnabled, renderConvert, renderConvertResult,
   };
 })();

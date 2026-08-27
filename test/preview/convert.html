@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Convert tab preview</title>
+<link rel="stylesheet" href="../../extension/content/panel.css">
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { background: #f2f4f5; font: 13px/1.5 ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
+  .note { padding: 28px; color: #5c676e; max-width: 420px; }
+  .note h1 { font-size: 15px; margin: 0 0 8px; color: #12181b; }
+</style>
+</head>
+<body>
+<div class="note">
+  <h1>Convert tab preview</h1>
+  <p>Drives the real <code>convert.js</code>, <code>ui.js</code> and
+  <code>content.js</code> against a fixture project, with only the Overleaf
+  network calls stubbed. The venue profiles are dynamically imported exactly as
+  the extension imports them.</p>
+</div>
+
+<script>
+  // --- browser-extension surfaces the content scripts expect ---------------
+  window.chrome = {
+    runtime: {
+      // The extension resolves lib/venues/index.mjs through here; served from
+      // the repo root, the same relative path works.
+      getURL: (p) => '../../extension/' + p,
+      onMessage: { addListener() {} },
+      lastError: null,
+      sendMessage: (m, cb) => cb && cb({ ok: true }),
+    },
+    storage: { sync: {
+      get: () => Promise.resolve({ backupDefault: true, autoClose: true }),
+      set: () => Promise.resolve(),
+    }},
+  };
+  var OTU = {};
+</script>
+<script src="../../extension/lib/util.js"></script>
+<script src="../../extension/lib/latex.js"></script>
+<script src="../../extension/lib/version.js"></script>
+<script src="../../extension/lib/diff.js"></script>
+<script src="../../extension/content/convert.js"></script>
+<script src="../../extension/content/ui.js"></script>
+
+<script>
+// Stub only the Overleaf network surface; everything else is the real thing.
+OTU.overleaf = {
+  projectId: () => '0123456789abcdef01234567',
+  getFileTree: async () => ({ _id: 'root', docs: [{ _id: 'd1', name: 'main.tex' }],
+                              fileRefs: [], folders: [] }),
+  flattenTree: (root) => ({
+    byPath: new Map([['main.tex', { id: 'd1', name: 'main.tex', type: 'doc',
+                                    folderId: 'root', path: 'main.tex' }]]),
+    folders: new Map(), rootFolderId: 'root',
+  }),
+  uploadFile: async () => ({ success: true, entity_id: 'new', entity_type: 'doc' }),
+};
+
+let FILES = [];
+OTU.planner = {
+  buildInventory: async () => FILES,
+  scan: async () => ({ items: [], templates: [], classNames: [], files: FILES,
+                       warnings: [], unclaimed: [] }),
+};
+</script>
+<script src="../../extension/content/content.js"></script>
+
+<script>
+(async () => {
+  const tex = await (await fetch('../fixtures/paper-acmart.tex')).text();
+  FILES = [
+    { path: 'main.tex', base: 'main.tex', ext: '.tex', size: tex.length, text: tex },
+    { path: 'sections/intro.tex', base: 'intro.tex', ext: '.tex', size: 12, text: 'intro\n' },
+    { path: 'references.bib', base: 'references.bib', ext: '.bib', size: 20, text: '' },
+  ];
+
+  if (new URLSearchParams(location.search).get('theme') === 'dark') {
+    // Reuse panel.css's own dark block rather than restating any colours.
+    const out = [];
+    for (const sheet of document.styleSheets) {
+      let rules; try { rules = sheet.cssRules; } catch { continue; }
+      for (const rule of rules) {
+        if (rule.type === CSSRule.MEDIA_RULE &&
+            /prefers-color-scheme:\s*dark/.test(rule.conditionText)) {
+          for (const inner of rule.cssRules) out.push(inner.cssText);
+        }
+      }
+    }
+    const st = document.createElement('style');
+    st.textContent = out.join(String.fromCharCode(10));
+    document.head.appendChild(st);
+    document.body.style.background = '#0e1113';
+    document.querySelector('.note').style.color = '#8b969d';
+    document.querySelector('.note h1').style.color = '#e9eef0';
+  }
+
+  OTU.ui.mount();
+  document.getElementById('otu-root').hidden = false;
+  document.getElementById('otu-launch').hidden = true;
+
+  await OTU.content.openTab('convert');
+
+  // Pick a target so the report and the "Create …" button are both visible.
+  const target = new URLSearchParams(location.search).get('to') || 'elsarticle';
+  await OTU.content.selectConvertTarget(target);
+
+  if (new URLSearchParams(location.search).get('diff') === '1') {
+    document.querySelector('[data-role=convdiff]')?.click();
+  }
+  document.documentElement.setAttribute('data-ready', '1');
+})();
+</script>
+</body>
+</html>

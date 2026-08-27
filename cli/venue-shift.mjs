@@ -27,13 +27,11 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 
-import { documentClass } from './venues/latex.mjs';
-import { Report } from './venues/ir.mjs';
-import * as acmart from './venues/acmart.mjs';
-import * as elsarticle from './venues/elsarticle.mjs';
-import * as ieeetran from './venues/ieeetran.mjs';
-
-const VENUES = [acmart, elsarticle, ieeetran];
+// The venue profiles live under extension/ so they ship inside the packaged
+// extension too; the CLI and the "Convert venue" tab run identical code.
+import {
+  VENUES, Report, documentClass, venueById,
+} from '../extension/lib/venues/index.js';
 
 const C = {
   dim: (s) => `\x1b[2m${s}\x1b[0m`,
@@ -135,7 +133,7 @@ function main() {
     die(`\\documentclass{${cls.name}} is not a venue this tool knows.\n` +
       `Known: ${VENUES.map((v) => v.id).join(', ')}`);
   }
-  const target = VENUES.find((v) => v.id === args.to);
+  const target = venueById(args.to);
   if (!target) {
     die(`unknown target venue "${args.to}".\n` +
       `Known: ${VENUES.map((v) => v.id).join(', ')}`);

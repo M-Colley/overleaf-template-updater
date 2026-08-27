@@ -26,9 +26,9 @@
 import {
   findCommand, findCommands, extractEnv,
   documentClass, packages, tidy, splitList,
-} from './latex.mjs';
-import { makeIR, makeAffiliation, preserve, TODO } from './ir.mjs';
-import { reconcile } from './packages.mjs';
+} from './latex.js';
+import { makeIR, makeAffiliation, preserve, TODO } from './ir.js';
+import { reconcile } from './packages.js';
 
 export const id = 'ieeetran';
 export const name = 'IEEE Transactions / Conference (IEEEtran)';
