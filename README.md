@@ -419,19 +419,20 @@ Checklist  paper-elsarticle-MIGRATION.md
 
 ### What actually maps
 
-| Concept | acmart | elsarticle | IEEEtran | |
-|---|---|---|---|---|
-| front matter | before `\maketitle` | `\begin{frontmatter}` | before `\maketitle` | ✅ restructured |
-| email | `\email{}` | `\ead{}` | an `Email:` line in the block | ✅ |
-| affiliation | `\institution{} \city{}` | `organization={}, city={}` | free text split by `\\` | ✅ / ⚠️ below |
-| keywords | `\keywords{a, b}` | `\begin{keyword} a \sep b` | `\begin{IEEEkeywords}` | ✅ |
-| bib style | `ACM-Reference-Format` | `elsarticle-num` | `IEEEtran` | ✅ |
-| funding note | `\authornote{}` | — | `\thanks{}` in the title | ✅ |
-| venue | `\acmConference`, `\acmISBN` | `\journal{}` | — | ⚠️ publisher-assigned |
-| CCS concepts | `\begin{CCSXML}` | — | — | ⚠️ [dl.acm.org/ccs](https://dl.acm.org/ccs), not derivable |
-| highlights | — | `\begin{highlights}` | — | ⚠️ you write them |
-| ORCID | `\orcid{}` | — | — | ⚠️ preserved as a comment |
-| teaser figure | `\begin{teaserfigure}` | — | — | ⚠️ preserved as a comment |
+| Concept | acmart | elsarticle | IEEEtran | llncs | |
+|---|---|---|---|---|---|
+| front matter | before `\maketitle` | `\begin{frontmatter}` | before `\maketitle` | before `\maketitle` | ✅ |
+| email | `\email{}` | `\ead{}` | `Email:` line in block | `\email{}` in `\institute` | ✅ |
+| affiliation | `\institution{} \city{}` | `organization={}` | free text split by `\\` | `\institute` + `\inst{n}` | ✅ / ⚠️ |
+| keywords | `\keywords{a, b}` | `\begin{keyword}` | `\begin{IEEEkeywords}` | `\keywords{a \and b}`, in the abstract | ✅ |
+| bib style | `ACM-Reference-Format` | `elsarticle-num` | `IEEEtran` | `splncs04` | ✅ |
+| funding note | `\authornote{}` | — | `\thanks{}` in title | `\thanks{}` in title | ✅ |
+| ORCID | `\orcid{}` | — | — | `\orcidID{}` | ✅ acmart↔llncs |
+| short title | `\title[…]` | — | — | `\titlerunning{}` | ✅ |
+| venue | `\acmConference`, `\acmISBN` | `\journal{}` | — | — | ⚠️ publisher-assigned |
+| CCS concepts | `\begin{CCSXML}` | — | — | — | ⚠️ [dl.acm.org/ccs](https://dl.acm.org/ccs) |
+| highlights | — | `\begin{highlights}` | — | — | ⚠️ you write them |
+| teaser figure | `\begin{teaserfigure}` | — | — | — | ⚠️ kept as a comment |
 
 **llncs links authors to institutions by number.** All authors live in one
 `\author{}` and all institutions in one `\institute{}`, both split by `\and`,
