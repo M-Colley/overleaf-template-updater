@@ -31,8 +31,9 @@ import { documentClass } from './venues/latex.mjs';
 import { Report } from './venues/ir.mjs';
 import * as acmart from './venues/acmart.mjs';
 import * as elsarticle from './venues/elsarticle.mjs';
+import * as ieeetran from './venues/ieeetran.mjs';
 
-const VENUES = [acmart, elsarticle];
+const VENUES = [acmart, elsarticle, ieeetran];
 
 const C = {
   dim: (s) => `\x1b[2m${s}\x1b[0m`,

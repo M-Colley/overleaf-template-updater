@@ -22,6 +22,7 @@ import {
   documentClass, packages, tidy, splitList,
 } from './latex.mjs';
 import { makeIR, makeAffiliation, preserve, TODO } from './ir.mjs';
+import { reconcile } from './packages.mjs';
 
 export const id = 'elsarticle';
 export const name = 'Elsevier Article (elsarticle)';
@@ -136,23 +137,8 @@ export function emit(ir, report) {
   }
   L.push(`\\documentclass[${opts.join(',')}]{elsarticle}`, '');
 
-  // Drop only what elsarticle itself loads. Everything else is carried across --
-  // acmart provides booktabs, elsarticle does not, so a converted body's
-  // \toprule would break if this filtered on the source class instead.
-  const redundant = [];
-  let emitted = 0;
-  for (const p of ir.packages) {
-    const keep = p.names.filter((n) => !CLASS_PROVIDES.has(n));
-    redundant.push(...p.names.filter((n) => CLASS_PROVIDES.has(n)));
-    if (!keep.length) continue;
-    L.push(`\\usepackage${p.options ? `[${p.options}]` : ''}{${keep.join(',')}}`);
-    emitted++;
-  }
-  if (emitted) L.push('');
-  if (redundant.length) {
-    report.map(`Dropped \`${[...new Set(redundant)].join(', ')}\` from the preamble`,
-      'elsarticle loads these itself');
-  }
+  const { lines } = reconcile(ir, CLASS_PROVIDES, report);
+  if (lines.length) L.push(...lines, '');
 
   L.push(`\\journal{${ir.meta.journal || TODO('target journal name')}}`);
   if (!ir.meta.journal) {

@@ -19,6 +19,7 @@ import {
   documentClass, packages, tidy, splitList,
 } from './latex.mjs';
 import { makeIR, makeAffiliation, preserve, TODO } from './ir.mjs';
+import { reconcile } from './packages.mjs';
 
 export const id = 'acmart';
 export const name = 'ACM Primary Article Template (acmart)';
@@ -165,21 +166,8 @@ export function emit(ir, report) {
   }
   L.push(`\\documentclass[${opts.join(',')}]{acmart}`, '');
 
-  // Drop only what acmart itself loads; re-loading those tends to break it.
-  const redundant = [];
-  let emitted = 0;
-  for (const p of ir.packages) {
-    const keep = p.names.filter((n) => !CLASS_PROVIDES.has(n));
-    redundant.push(...p.names.filter((n) => CLASS_PROVIDES.has(n)));
-    if (!keep.length) continue;
-    L.push(`\\usepackage${p.options ? `[${p.options}]` : ''}{${keep.join(',')}}`);
-    emitted++;
-  }
-  if (emitted) L.push('');
-  if (redundant.length) {
-    report.map(`Dropped \`${[...new Set(redundant)].join(', ')}\` from the preamble`,
-      'acmart loads these itself and re-loading them can break the class');
-  }
+  const { lines } = reconcile(ir, CLASS_PROVIDES, report);
+  if (lines.length) L.push(...lines, '');
 
   // Venue block. ACM requires all of it for a real submission; anything the
   // source could not supply is scaffolded so the paper still compiles.

@@ -331,8 +331,14 @@ entirely different furniture, and moving it by hand is a fiddly hour that is
 easy to get subtly wrong.
 
 ```bash
-node cli/venue-shift.mjs main.tex --to elsarticle
+node cli/venue-shift.mjs main.tex       --to elsarticle
+node cli/venue-shift.mjs paper.tex      --to ieeetran
+node cli/venue-shift.mjs submission.tex --to acmart
 ```
+
+Three venues, converting between any pair in either direction: **acmart**
+(CHI, CSCW, UIST, AutomotiveUI), **elsarticle** (Elsevier journals) and
+**IEEEtran** (IEEE conferences and transactions).
 
 Two rules make it safe to point at a real paper:
 
@@ -384,18 +390,37 @@ Checklist  paper-elsarticle-MIGRATION.md
 
 ### What actually maps
 
-| Concept | acmart | elsarticle | |
-|---|---|---|---|
-| front matter | commands before `\maketitle` | `\begin{frontmatter}…\end{frontmatter}` | ✅ restructured |
-| email | `\email{}` | `\ead{}` | ✅ |
-| affiliation | `\institution{} \city{} \country{}` | `organization={}, city={}, country={}` | ✅ field-by-field |
-| keywords | `\keywords{a, b}` | `\begin{keyword} a \sep b \end{keyword}` | ✅ |
-| bib style | `ACM-Reference-Format` | `elsarticle-num` | ✅ |
-| venue | `\acmConference`, `\acmISBN`, `\acmDOI` | `\journal{}` | ⚠️ scaffolded — publisher-assigned |
-| CCS concepts | `\begin{CCSXML}`, `\ccsdesc` | — | ⚠️ generated at [dl.acm.org/ccs](https://dl.acm.org/ccs), not derivable |
-| highlights | — | `\begin{highlights}` | ⚠️ you write them |
-| ORCID | `\orcid{}` | — | ⚠️ preserved as a comment |
-| teaser figure | `\begin{teaserfigure}` | — | ⚠️ preserved as a comment |
+| Concept | acmart | elsarticle | IEEEtran | |
+|---|---|---|---|---|
+| front matter | before `\maketitle` | `\begin{frontmatter}` | before `\maketitle` | ✅ restructured |
+| email | `\email{}` | `\ead{}` | an `Email:` line in the block | ✅ |
+| affiliation | `\institution{} \city{}` | `organization={}, city={}` | free text split by `\\` | ✅ / ⚠️ below |
+| keywords | `\keywords{a, b}` | `\begin{keyword} a \sep b` | `\begin{IEEEkeywords}` | ✅ |
+| bib style | `ACM-Reference-Format` | `elsarticle-num` | `IEEEtran` | ✅ |
+| funding note | `\authornote{}` | — | `\thanks{}` in the title | ✅ |
+| venue | `\acmConference`, `\acmISBN` | `\journal{}` | — | ⚠️ publisher-assigned |
+| CCS concepts | `\begin{CCSXML}` | — | — | ⚠️ [dl.acm.org/ccs](https://dl.acm.org/ccs), not derivable |
+| highlights | — | `\begin{highlights}` | — | ⚠️ you write them |
+| ORCID | `\orcid{}` | — | — | ⚠️ preserved as a comment |
+| teaser figure | `\begin{teaserfigure}` | — | — | ⚠️ preserved as a comment |
+
+**IEEEtran's author blocks are the awkward case.** Where acmart has
+`\institution{}`/`\city{}` and elsarticle has `organization={}`, IEEE gives you
+free text separated by `\\`, with no marked-up fields at all:
+
+```latex
+\IEEEauthorblockA{\textit{Institute of Media Informatics} \\
+\textit{Ulm University}\\
+Ulm, Germany \\
+Email: mark.colley@uni-ulm.de}
+```
+
+Splitting that into institution, city, country and email is necessarily a
+heuristic: the last comma-bearing line is treated as the place, `Email:` lines
+are recognised, and `Massachusetts 02115` splits into state and postcode. It
+works on IEEE's own samples — but every affiliation parsed this way is **flagged
+for review** rather than presented as reliable, and a US address with no country
+line produces a `TODO` rather than a guess.
 
 The honest split: the **mechanics** convert, the **editorial content** cannot.
 CCS concepts come from ACM's taxonomy tool, a DOI and ISBN are assigned on
@@ -407,14 +432,21 @@ five minutes that are genuinely yours.
 
 Venues are profiles with a `parse()` and an `emit()`, mapping through a shared
 intermediate representation ([`cli/venues/ir.mjs`](cli/venues/ir.mjs)) — so a new
-venue costs one parser and one emitter, not a converter per pair. `IEEEtran` is
-the obvious next one.
+venue costs one parser and one emitter, not a converter per pair. Three venues
+means six conversion directions out of six functions.
 
-One design note worth repeating, because getting it backwards silently corrupts
-papers: **package filtering happens on the way out, against the target class.**
-acmart loads `booktabs` itself; elsarticle does not. Filtering on the source
-would quietly strip `booktabs` from an ACM→Elsevier conversion and break every
-`\toprule` in the body. There is a regression test pinning exactly that.
+**Packages are reconciled against the target class, in both directions**
+([`cli/venues/packages.mjs`](cli/venues/packages.mjs)). Getting this wrong
+silently corrupts papers either way:
+
+- acmart loads `booktabs`; elsarticle doesn't. Filtering against the *source*
+  would strip it from an ACM→Elsevier conversion and break every `\toprule`.
+- IEEEtran loads almost nothing. An acmart paper never declares
+  `graphicx` — acmart provides it — so converting to IEEEtran must **add** it or
+  every `\includegraphics` fails. Nothing in the source document records that
+  dependency; it's recoverable only by looking at what the body actually uses.
+
+Both have regression tests.
 
 ---
 
@@ -464,14 +496,14 @@ PRs adding templates are welcome.
 npm test
 ```
 
-Four suites, 179 assertions:
+Four suites, 208 assertions:
 
 | Suite | Covers |
 |---|---|
 | `test/run.js` | parsing, version comparison, diff, registry integrity |
 | `test/run-unzip.js` | the ZIP reader, against a real archive |
 | `test/run-planner.js` | end-to-end scan through the real service worker, the real ACM archive and live CTAN |
-| `test/run-venue-shift.mjs` | acmart ↔ elsarticle conversion, byte-identical bodies, CLI safety |
+| `test/run-venue-shift.mjs` | conversion between all three venues, byte-identical bodies, CLI safety |
 
 Add `--offline` to `test/run-planner.js` to skip the network-backed portion.
 
