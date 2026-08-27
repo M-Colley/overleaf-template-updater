@@ -1,13 +1,16 @@
 {
   "name": "overleaf-template-updater",
   "version": "0.1.0",
-  "description": "Detect and update stale LaTeX templates in Overleaf projects, as a Chrome extension and a git-based CLI.",
+  "description": "Keep Overleaf LaTeX templates up to date, and move a paper's front matter between venue templates.",
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "test": "node test/run.js && node test/run-unzip.js && node test/run-planner.js",
-    "test:offline": "node test/run.js && node test/run-unzip.js && node test/run-planner.js --offline",
-    "otu": "node cli/otu.mjs"
+    "test": "node test/run.js && node test/run-unzip.js && node test/run-planner.js && node test/run-venue-shift.mjs",
+    "test:offline": "node test/run.js && node test/run-unzip.js && node test/run-planner.js --offline && node test/run-venue-shift.mjs",
+    "otu": "node cli/otu.mjs",
+    "venue-shift": "node cli/venue-shift.mjs"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  }
 }

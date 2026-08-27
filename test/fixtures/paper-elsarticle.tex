@@ -1,0 +1,79 @@
+%% A realistic elsarticle manuscript, shaped like CTAN's
+%% elsarticle-template-num.tex. Used to test venue-shift; not a real paper.
+\documentclass[preprint,12pt]{elsarticle}
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\journal{Transportation Research Part F}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Trust Calibration in Highly Automated Driving}
+
+\author{Mark Colley}
+\ead{mark.colley@uni-ulm.de}
+\affiliation{organization={Institute of Media Informatics, Ulm University},
+            addressline={James-Franck-Ring},
+            city={Ulm},
+            postcode={89081},
+            country={Germany}}
+
+\author{Jane Doe}
+\ead{jane.doe@example.edu}
+\affiliation{organization={Example University},
+            city={Boston},
+            state={Massachusetts},
+            country={USA}}
+
+\begin{abstract}
+Automated vehicles must communicate their intent to build appropriate trust.
+We report a within-subjects study with 24 participants examining how takeover
+requests shape trust over repeated exposure.
+\end{abstract}
+
+\begin{highlights}
+\item Trust increases over repeated takeover requests.
+\item Calibration depends on the timing of the request.
+\item Explanations reduce overtrust in edge cases.
+\end{highlights}
+
+\begin{keyword}
+automated driving \sep trust \sep takeover request \sep user study
+\end{keyword}
+
+\end{frontmatter}
+
+\section{Introduction}
+Trust in automated vehicles is neither uniformly good nor uniformly
+bad~\cite{lee2004trust}. We examine how it develops across repeated takeovers.
+
+\section{Method}
+We ran a within-subjects experiment with 24 participants.
+
+\begin{table}[t]
+  \caption{Participant demographics.}
+  \label{tab:demographics}
+  \begin{tabular}{lr}
+    \toprule
+    Measure & Value \\
+    \midrule
+    Participants & 24 \\
+    Mean age & 27.4 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Results}
+Trust increased over exposure, $F(2,46) = 8.1$, $p < .001$.
+
+\section{Conclusion}
+Repeated exposure calibrates trust.
+
+\bibliographystyle{elsarticle-num}
+\bibliography{references}
+
+\end{document}

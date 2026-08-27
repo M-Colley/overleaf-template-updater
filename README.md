@@ -8,7 +8,7 @@ version it was forked from — quietly, with no indication anything has changed.
 There is no "update template" button, because from Overleaf's point of view your
 project isn't a copy of anything. It's just files.
 
-This repo adds one.
+This repo adds one — plus a second tool for when you change venue entirely.
 
 <p align="center">
   <picture>
@@ -20,7 +20,7 @@ This repo adds one.
 
 <p align="center"><sub><i>The panel mid-review. The editor behind it is a stand-in — the panel, the version numbers and the diff are the real thing.</i></sub></p>
 
-Two tools, actually, for different situations.
+Three tools, for three situations.
 
 |  | [Chrome extension](#the-chrome-extension) | [`otu` CLI](#the-otu-cli) |
 |---|---|---|
@@ -29,6 +29,10 @@ Two tools, actually, for different situations.
 | **Merge model** | file replacement | real **three-way merge** |
 | **Your prose** | never touched | merged, conflicts flagged |
 | **Setup** | load unpacked, click a button | one `otu init` per project |
+
+And when the venue itself changes — a CHI paper extended into an Elsevier
+journal submission — [`venue-shift`](#venue-shift--moving-a-paper-between-venues)
+converts the front matter and writes a new `.tex`, leaving your original alone.
 
 Use the extension for the common case — *"is my class file stale?"* Use the CLI
 when you also want the template's **boilerplate** changes — new preamble macros,
@@ -232,6 +236,76 @@ node cli/otu.mjs push
 Requires Overleaf git access: **Account Settings → Git integration → generate a
 token**, then use your email as the git username and the token as the password.
 
+### A worked example
+
+Say you started a paper from acmart v1.71 and have since written it. Upstream is
+now v2.20, which changed both the class and the boilerplate.
+
+```console
+$ otu status
+Project   https://git.overleaf.com/61a8757b541901373460174a
+Template  https://github.com/borisveytsman/acmart.git
+Baseline  v1.71 c5b7c44a
+Latest    v2.20 c0e381f7
+
+▲ 1 new template commit(s):
+  c0e381f template v2.20: acmISBN macro, hyperref, updated conference block
+
+Files the template changed:
+  acmart.cls | 4 +++-
+  main.tex   | 3 ++-
+  2 files changed, 5 insertions(+), 2 deletions(-)
+
+Run otu update to three-way merge these into your project.
+```
+
+Note it says the template changed `main.tex` — that's the boilerplate the
+extension deliberately won't touch. Check what that would do to *your* `main.tex`
+before committing to it:
+
+```console
+$ otu update --dry-run
+Would merge template v1.71 → v2.20
+
+Clean merge — no conflicts expected.
+
+(dry run — nothing was changed)
+```
+
+Nothing has been written at this point; `--dry-run` uses `git merge-tree`, which
+computes the merge without touching the working tree. Now do it:
+
+```console
+$ otu update
+Advancing template baseline v1.71 → v2.20
+Merging template changes into your project…
+
+Auto-merging main.tex
+Merge made by the 'ort' strategy.
+ acmart.cls | 4 +++-
+ main.tex   | 3 ++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+✓ Merged cleanly. Review, then: otu push
+```
+
+`Auto-merging main.tex` is the whole point: the template's new `\acmISBN` line
+and rewritten `\acmConference` block landed in the preamble, while the title and
+body you wrote were left alone. Had you edited the same line the template
+changed, you would get ordinary conflict markers instead — and `--dry-run` would
+have named the file beforehand:
+
+```console
+$ otu update --dry-run
+Conflicts expected in:
+  main.tex
+
+These are files the template changed that you also edited.
+Everything else merges automatically.
+```
+
+Review with `git diff HEAD~1`, then `otu push` to send it back to Overleaf.
+
 **Verified behaviour.** A project on template v1.71 whose author rewrote the
 title and body, against a template shipping v2.20 that changed both the class and
 the boilerplate:
@@ -245,6 +319,102 @@ the boilerplate:
 
 `.otu.json` goes into `.git/info/exclude`, so it's never committed and never
 turns up as a stray file inside your Overleaf project.
+
+---
+
+## `venue-shift` — moving a paper between venues
+
+A different problem from keeping a template current: your CHI paper is being
+extended into an Elsevier journal submission, or an Elsevier manuscript is being
+cut down for an ACM conference. The prose is the same. The front matter is
+entirely different furniture, and moving it by hand is a fiddly hour that is
+easy to get subtly wrong.
+
+```bash
+node cli/venue-shift.mjs main.tex --to elsarticle
+```
+
+Two rules make it safe to point at a real paper:
+
+1. **It never modifies your input.** It writes a new `.tex` beside it.
+2. **It never rewrites your body.** Everything between the front matter and
+   `\end{document}` is copied byte-for-byte — with exactly one exception, the
+   argument of `\bibliographystyle`, because leaving `ACM-Reference-Format` in an
+   Elsevier submission simply will not compile. The test suite asserts that
+   byte-identity in both directions and across a round trip.
+
+Anything the target has no concept of is **preserved as a tagged comment**, never
+deleted. Anything the target requires that cannot be derived is scaffolded as a
+`TODO-venue-shift` marker and listed in a migration checklist written alongside
+the converted file.
+
+<details>
+<summary><b>What it does with a real ACM paper</b></summary>
+
+```console
+$ node cli/venue-shift.mjs paper.tex --to elsarticle
+
+Converted  acmart → elsarticle
+Written    paper-elsarticle.tex
+Checklist  paper-elsarticle-MIGRATION.md
+
+✓ translated automatically (3)
+    Dropped `hyperref` from the preamble — elsarticle loads these itself
+    Keywords — comma-separated \keywords → \sep-separated keyword environment
+    Bibliography style — ACM-Reference-Format → elsarticle-num
+
+▲ dropped, preserved as comments (4)
+    Class options `sigconf` — ACM layout options have no elsarticle equivalent
+    ORCID for Mark Colley — Elsevier collects it in the submission system
+    Author note for Mark Colley — no direct elsarticle equivalent
+    CCS concepts — an ACM classification with no Elsevier equivalent
+
+▲ worth checking (1)
+    The body uses full-width `figure*`/`table*` floats. Column layouts differ
+    between these templates, so check they still fit.
+
+● you must fill these in (2)
+    \journal — the Elsevier journal you are submitting to
+    Research highlights — most journals require 3-5 bullets of max 85 characters
+
+  Each is marked TODO-venue-shift in the converted file.
+```
+
+</details>
+
+### What actually maps
+
+| Concept | acmart | elsarticle | |
+|---|---|---|---|
+| front matter | commands before `\maketitle` | `\begin{frontmatter}…\end{frontmatter}` | ✅ restructured |
+| email | `\email{}` | `\ead{}` | ✅ |
+| affiliation | `\institution{} \city{} \country{}` | `organization={}, city={}, country={}` | ✅ field-by-field |
+| keywords | `\keywords{a, b}` | `\begin{keyword} a \sep b \end{keyword}` | ✅ |
+| bib style | `ACM-Reference-Format` | `elsarticle-num` | ✅ |
+| venue | `\acmConference`, `\acmISBN`, `\acmDOI` | `\journal{}` | ⚠️ scaffolded — publisher-assigned |
+| CCS concepts | `\begin{CCSXML}`, `\ccsdesc` | — | ⚠️ generated at [dl.acm.org/ccs](https://dl.acm.org/ccs), not derivable |
+| highlights | — | `\begin{highlights}` | ⚠️ you write them |
+| ORCID | `\orcid{}` | — | ⚠️ preserved as a comment |
+| teaser figure | `\begin{teaserfigure}` | — | ⚠️ preserved as a comment |
+
+The honest split: the **mechanics** convert, the **editorial content** cannot.
+CCS concepts come from ACM's taxonomy tool, a DOI and ISBN are assigned on
+acceptance, and research highlights are three sentences only an author can
+write. The tool does the hour of fiddly work and hands you a checklist of the
+five minutes that are genuinely yours.
+
+### Adding a venue
+
+Venues are profiles with a `parse()` and an `emit()`, mapping through a shared
+intermediate representation ([`cli/venues/ir.mjs`](cli/venues/ir.mjs)) — so a new
+venue costs one parser and one emitter, not a converter per pair. `IEEEtran` is
+the obvious next one.
+
+One design note worth repeating, because getting it backwards silently corrupts
+papers: **package filtering happens on the way out, against the target class.**
+acmart loads `booktabs` itself; elsarticle does not. Filtering on the source
+would quietly strip `booktabs` from an ACM→Elsevier conversion and break every
+`\toprule` in the body. There is a regression test pinning exactly that.
 
 ---
 
@@ -294,13 +464,14 @@ PRs adding templates are welcome.
 npm test
 ```
 
-Three suites, 115 assertions:
+Four suites, 179 assertions:
 
 | Suite | Covers |
 |---|---|
 | `test/run.js` | parsing, version comparison, diff, registry integrity |
 | `test/run-unzip.js` | the ZIP reader, against a real archive |
 | `test/run-planner.js` | end-to-end scan through the real service worker, the real ACM archive and live CTAN |
+| `test/run-venue-shift.mjs` | acmart ↔ elsarticle conversion, byte-identical bodies, CLI safety |
 
 Add `--offline` to `test/run-planner.js` to skip the network-backed portion.
 

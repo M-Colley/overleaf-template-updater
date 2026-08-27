@@ -1,0 +1,99 @@
+%% A realistic acmart submission, shaped like ACM's own samples/sigconf.tex.
+%% Used to test venue-shift; not a real paper.
+\documentclass[sigconf]{acmart}
+
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{pgfplots}
+
+\setcopyright{acmlicensed}
+\copyrightyear{2026}
+\acmYear{2026}
+\acmDOI{10.1145/3654321.3654322}
+\acmConference[CHI '26]{CHI Conference on Human Factors in Computing
+  Systems}{April 25--30, 2026}{Yokohama, Japan}
+\acmISBN{978-1-4503-9999-9/26/04}
+
+\begin{document}
+
+\title{Trust Calibration in Highly Automated Driving}
+
+\author{Mark Colley}
+\authornote{Corresponding author.}
+\orcid{0000-0001-5207-5029}
+\email{mark.colley@uni-ulm.de}
+\affiliation{%
+  \institution{Institute of Media Informatics, Ulm University}
+  \city{Ulm}
+  \state{Baden-W\"urttemberg}
+  \country{Germany}
+}
+
+\author{Jane Doe}
+\email{jane.doe@example.edu}
+\affiliation{%
+  \institution{Example University}
+  \city{Boston}
+  \state{Massachusetts}
+  \country{USA}
+}
+
+\begin{abstract}
+  Automated vehicles must communicate their intent to build appropriate trust.
+  We report a within-subjects study with 24 participants examining how takeover
+  requests shape trust over repeated exposure.
+\end{abstract}
+
+\begin{CCSXML}
+<ccs2012>
+  <concept>
+    <concept_id>10003120.10003121</concept_id>
+    <concept_desc>Human-centered computing~Human computer interaction (HCI)</concept_desc>
+    <concept_significance>500</concept_significance>
+  </concept>
+</ccs2012>
+\end{CCSXML}
+\ccsdesc[500]{Human-centered computing~Human computer interaction (HCI)}
+
+\keywords{automated driving, trust, takeover request, user study}
+
+\maketitle
+
+\section{Introduction}
+Trust in automated vehicles is neither uniformly good nor uniformly
+bad~\cite{lee2004trust}. We examine how it develops across repeated takeovers.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figures/apparatus}
+  \caption{The driving simulator used in the study.}
+  \Description{A fixed-base driving simulator with three screens.}
+  \label{fig:apparatus}
+\end{figure*}
+
+\section{Method}
+We ran a within-subjects experiment with 24 participants.
+
+\begin{table}[t]
+  \caption{Participant demographics.}
+  \label{tab:demographics}
+  \begin{tabular}{lr}
+    \toprule
+    Measure & Value \\
+    \midrule
+    Participants & 24 \\
+    Mean age & 27.4 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Results}
+Trust increased over exposure, $F(2,46) = 8.1$, $p < .001$.
+
+\section{Conclusion}
+Repeated exposure calibrates trust.
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\end{document}

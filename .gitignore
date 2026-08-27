@@ -8,3 +8,6 @@ dist/
 test/fixtures/*
 !test/fixtures/acmart-old.cls
 !test/fixtures/main.tex
+!test/fixtures/paper-acmart.tex
+!test/fixtures/paper-elsarticle.tex
+test/fixtures/.venue-shift-tmp/
