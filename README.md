@@ -8,7 +8,19 @@ version it was forked from — quietly, with no indication anything has changed.
 There is no "update template" button, because from Overleaf's point of view your
 project isn't a copy of anything. It's just files.
 
-This repo adds one. Two, actually, for different situations.
+This repo adds one.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/panel-dark.png">
+    <img src="docs/img/panel.png" width="900"
+         alt="The Template Updater panel open beside a LaTeX editor. It reports the project uses the ACM Primary Article Template, warns that ACM-Reference-Format.bst was built for acmart v2.19 while acmart.cls is v1.71, and lists two files needing attention: acmart.cls v1.71 to v2.20 with an expanded diff showing the added acmISBN macro and hyperref, and ACM-Reference-Format.bst v2.1 to v2.2.">
+  </picture>
+</p>
+
+<p align="center"><sub><i>The panel mid-review. The editor behind it is a stand-in — the panel, the version numbers and the diff are the real thing.</i></sub></p>
+
+Two tools, actually, for different situations.
 
 |  | [Chrome extension](#the-chrome-extension) | [`otu` CLI](#the-otu-cli) |
 |---|---|---|
@@ -274,6 +286,18 @@ both render the real CSS and JS against mock data covering every state:
 ```bash
 python -m http.server 8731
 ```
+
+The README screenshots are regenerated from `test/preview/screenshot.html` — the
+same real `panel.css` and `ui.js`, captured headless so they never drift from the
+actual UI:
+
+```bash
+chrome --headless=new --force-device-scale-factor=2 --window-size=1280,840 --screenshot=docs/img/panel.png http://localhost:8731/test/preview/screenshot.html
+```
+
+Append `?theme=dark` for the dark variant; it lifts the real
+`@media (prefers-color-scheme: dark)` rules out of the stylesheet rather than
+restating any colours.
 
 Package the extension with `python tools/package.py`, which validates the
 manifest first and writes a zip to `dist/`.

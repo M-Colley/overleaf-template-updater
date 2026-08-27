@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Panel screenshot</title>
+<link rel="stylesheet" href="../../extension/content/panel.css">
+<style>
+  /* A generic LaTeX-editor backdrop so the panel is shown in context. It is
+     deliberately unbranded -- this is a stand-in, not a depiction of any
+     particular editor's interface. */
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: flex;
+    font: 13px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #f2f4f5;
+    color: #2b3338;
+    overflow: hidden;
+  }
+  .tree {
+    width: 208px; flex: none; padding: 14px 0;
+    background: #22282b; color: #b9c3c9;
+    font-size: 12.5px;
+  }
+  .tree .hd {
+    padding: 0 15px 10px; font-size: 10px; letter-spacing: .09em;
+    text-transform: uppercase; color: #6d7a82; font-weight: 650;
+  }
+  .tree div.f { padding: 4px 15px; display: flex; gap: 7px; }
+  .tree div.f.on { background: #2f373b; color: #fff; }
+  .tree .ic { opacity: .5; }
+  .editor { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .bar {
+    height: 38px; flex: none; background: #fff; border-bottom: 1px solid #dfe4e6;
+    display: flex; align-items: center; padding: 0 16px; gap: 16px;
+    font-size: 12px; color: #6b767d;
+  }
+  .bar .doc { color: #2b3338; font-weight: 600; }
+  .code {
+    flex: 1; padding: 16px 20px; overflow: hidden; background: #fff;
+    font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+    font-size: 12.5px; line-height: 1.75; white-space: pre;
+  }
+  .k { color: #0a6ba8; }
+  .a { color: #a1450f; }
+  .c { color: #8b969d; }
+  .s { color: #1b7f4b; }
+</style>
+</head>
+<body>
+  <nav class="tree">
+    <div class="hd">Project</div>
+    <div class="f on"><span class="ic">▤</span> main.tex</div>
+    <div class="f"><span class="ic">▤</span> acmart.cls</div>
+    <div class="f"><span class="ic">▤</span> ACM-Reference-Format.bst</div>
+    <div class="f"><span class="ic">▤</span> references.bib</div>
+    <div class="f"><span class="ic">▸</span> sections</div>
+    <div class="f"><span class="ic">▸</span> figures</div>
+  </nav>
+
+  <main class="editor">
+    <div class="bar"><span class="doc">main.tex</span><span>Recompile</span><span>History</span></div>
+    <div class="code"><span class="c">% Trust in Automated Vehicles -- CHI 2026 submission</span>
+<span class="k">\documentclass</span>[<span class="a">sigconf</span>]{<span class="a">acmart</span>}
+
+<span class="k">\acmConference</span>[<span class="a">CHI '26</span>]{<span class="a">CHI Conference on Human Factors</span>}{<span class="a">2026</span>}{<span class="a">Yokohama, Japan</span>}
+<span class="k">\acmISBN</span>{<span class="a">978-1-4503-0000-0/26/04</span>}
+
+<span class="k">\begin</span>{<span class="a">document</span>}
+
+<span class="k">\title</span>{<span class="s">Trust Calibration in Highly Automated Driving</span>}
+
+<span class="k">\author</span>{<span class="s">Mark Colley</span>}
+<span class="k">\affiliation</span>{<span class="k">\institution</span>{<span class="s">Institute of Media Informatics</span>}}
+
+<span class="k">\maketitle</span>
+
+<span class="k">\section</span>{<span class="s">Introduction</span>}
+We conducted a within-subjects study with 24 participants to
+examine how takeover requests shape trust over repeated
+exposure<span class="k">~\cite</span>{<span class="a">colley2024</span>}.
+
+<span class="k">\end</span>{<span class="a">document</span>}</div>
+  </main>
+
+<script>
+  window.chrome = { storage: { sync: {
+    get: () => Promise.resolve({ backupDefault: true }),
+    set: () => Promise.resolve(),
+  }}};
+  var OTU = {};
+</script>
+<script src="../../extension/lib/util.js"></script>
+<script src="../../extension/lib/diff.js"></script>
+<script src="../../extension/content/ui.js"></script>
+<script>
+OTU.content = { onOpen(){}, rescan(){}, applySelected(){} };
+
+const OLD_CLS = `\\ProvidesClass{acmart}[2020/04/30 v1.71 Typesetting articles for the ACM]
+\\NeedsTeXFormat{LaTeX2e}
+\\RequirePackage{xkeyval}
+\\newcommand{\\acmDOI}[1]{\\def\\@acmDOI{#1}}
+\\RequirePackage{graphicx}
+\\def\\@copyrightmode{acmcopyright}`;
+const NEW_CLS = `\\ProvidesClass{acmart}[2026/08/16 v2.20 Typesetting articles for the ACM]
+\\NeedsTeXFormat{LaTeX2e}
+\\RequirePackage{xkeyval}
+\\newcommand{\\acmDOI}[1]{\\def\\@acmDOI{#1}}
+\\newcommand{\\acmISBN}[1]{\\def\\@acmISBN{#1}}
+\\RequirePackage{graphicx}
+\\RequirePackage{hyperref}
+\\def\\@copyrightmode{acmlicensed}`;
+
+const plan = {
+  templates: [{ id:'acmart', name:'ACM Primary Article Template (acmart)' }],
+  classNames: ['acmart'],
+  files: new Array(41),
+  warnings: [
+    'Mismatch: your ACM-Reference-Format.bst was built for acmart v2.19, but your acmart.cls is v1.71. Bibliography formatting may not match the class.'
+  ],
+  unclaimed: [],
+  items: [
+    { name:'acmart.cls', action:'replace', present:true, projectPath:'acmart.cls',
+      local:{version:'1.71', date:'2020-04-30'}, upstream:{version:'2.20', date:'2026-08-16'},
+      status:'outdated', statusReason:'local v1.71 vs upstream v2.20',
+      applicable:true, selected:true, localText:OLD_CLS, newText:NEW_CLS,
+      fromCache:false,
+      sizeNote:"ACM's official template archive (~15 MB, cached after the first fetch)" },
+    { name:'ACM-Reference-Format.bst', action:'replace', present:true, projectPath:'ACM-Reference-Format.bst',
+      local:{version:'2.1'}, upstream:{version:'2.2'}, status:'outdated',
+      statusReason:'local v2.1 vs upstream v2.2', applicable:true, selected:true,
+      fromCache:'ttl', localText:'a\nb\n', newText:'a\nB\n' },
+    { name:'acmnumeric.bbx', action:'replace', present:true, projectPath:'acmnumeric.bbx',
+      local:{version:'0.1', date:'2017-09-27'}, upstream:{version:'0.1', date:'2017-09-27'},
+      status:'current', statusReason:'Byte-identical to upstream.',
+      applicable:false, selected:false, fromCache:'version' },
+    { name:'acmauthoryear.cbx', action:'replace', present:false, projectPath:null,
+      local:null, upstream:{version:'0.1'}, status:'absent',
+      statusReason:"Not bundled in this project - Overleaf's own TeX Live supplies it.",
+      applicable:false, selected:false },
+  ],
+};
+
+if (new URLSearchParams(location.search).get('theme') === 'dark') {
+  // Reuse the stylesheet's own dark block rather than restating any colours.
+  const out = [];
+  for (const sheet of document.styleSheets) {
+    let rules; try { rules = sheet.cssRules; } catch { continue; }
+    for (const rule of rules) {
+      if (rule.type === CSSRule.MEDIA_RULE &&
+          /prefers-color-scheme:\s*dark/.test(rule.conditionText)) {
+        for (const inner of rule.cssRules) out.push(inner.cssText);
+      }
+    }
+  }
+  const style = document.createElement('style');
+  style.textContent = out.join(String.fromCharCode(10));
+  document.head.appendChild(style);
+  document.body.style.background = '#0e1113';
+  document.querySelector('.bar').style.cssText += ';background:#1b2124;border-bottom-color:#2c3439;color:#8b969d';
+  document.querySelector('.code').style.cssText += ';background:#1b2124;color:#c9d3d9';
+  document.querySelectorAll('.k').forEach(n=>n.style.color='#6cb6e8');
+  document.querySelectorAll('.a').forEach(n=>n.style.color='#e0a06a');
+  document.querySelectorAll('.s').forEach(n=>n.style.color='#7fd1a0');
+  document.querySelectorAll('.c').forEach(n=>n.style.color='#6d7a82');
+}
+
+OTU.ui.mount();
+document.getElementById('otu-root').hidden = false;
+document.getElementById('otu-launch').hidden = true;
+OTU.ui.subtitle('acmart · 41 files scanned');
+OTU.ui.renderPlan(plan);
+
+// Open the diff on the headline item so the screenshot shows what the tool
+// actually promises: you see the change before it happens.
+requestAnimationFrame(() => {
+  document.querySelector('[data-role=diff]')?.click();
+  document.documentElement.setAttribute('data-ready', '1');
+});
+</script>
+</body>
+</html>
