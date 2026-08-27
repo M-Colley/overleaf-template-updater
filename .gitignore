@@ -11,4 +11,5 @@ test/fixtures/*
 !test/fixtures/paper-acmart.tex
 !test/fixtures/paper-elsarticle.tex
 !test/fixtures/paper-ieeetran.tex
+!test/fixtures/paper-llncs.tex
 test/fixtures/.venue-shift-tmp/

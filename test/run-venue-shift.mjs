@@ -20,6 +20,7 @@ import * as latex from '../extension/lib/venues/latex.js';
 import * as acmart from '../extension/lib/venues/acmart.js';
 import * as elsarticle from '../extension/lib/venues/elsarticle.js';
 import * as ieeetran from '../extension/lib/venues/ieeetran.js';
+import * as llncs from '../extension/lib/venues/llncs.js';
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -50,6 +51,7 @@ function bodyOf(text) {
 const ACM = readFileSync(join(FIX, 'paper-acmart.tex'), 'utf8');
 const ELS = readFileSync(join(FIX, 'paper-elsarticle.tex'), 'utf8');
 const IEEE = readFileSync(join(FIX, 'paper-ieeetran.tex'), 'utf8');
+const LLNCS = readFileSync(join(FIX, 'paper-llncs.tex'), 'utf8');
 
 /* ------------------------------------------------------------------- latex */
 group('latex.mjs — brace-aware reading');
@@ -222,6 +224,91 @@ ok('affiliation becomes key=value',
   i2e.out.includes('organization={Institute of Media Informatics, Ulm University}'));
 ok('email becomes \\ead', i2e.out.includes('\\ead{mark.colley@uni-ulm.de}'));
 check('body carried byte-for-byte', bodyOf(i2e.out), bodyOf(IEEE));
+
+/* ------------------------------------------------------------------ llncs */
+group('llncs -> acmart');
+const l2a = convert(llncs, acmart, LLNCS);
+
+check('title read, \\thanks lifted out', l2a.ir.title,
+  'Trust Calibration in Highly Automated Driving');
+check('funding note captured', l2a.ir.titleNote,
+  'Supported by the German Research Foundation.');
+check('\\titlerunning becomes the short title', l2a.ir.shortTitle,
+  'Trust Calibration in Automated Driving');
+check('all three authors found from one \\author',
+  l2a.ir.authors.map((x) => x.name), ['Mark Colley', 'Jane Doe', 'Alex Roe']);
+
+// llncs links authors to institutions positionally with \inst{n}. Alex Roe is
+// \inst{1}, the same institution as Mark Colley.
+check('\\inst{1} resolved to the first institution',
+  l2a.ir.authors[2].affiliation.organization,
+  'Institute of Media Informatics, Ulm University');
+check('\\inst{2} resolved to the second',
+  l2a.ir.authors[1].affiliation.organization,
+  'Department of Computer Science, Example University');
+check('institution split into city and country',
+  [l2a.ir.authors[0].affiliation.city, l2a.ir.authors[0].affiliation.country],
+  ['Ulm', 'Germany']);
+
+// The bug this guards: \email lives in the \institute block, not beside the
+// author, so a shared institution would otherwise hand Alex Roe someone else's
+// address.
+check('the institution email goes to the first author only',
+  l2a.ir.authors.map((x) => x.email),
+  ['mark.colley@uni-ulm.de', 'jane.doe@example.edu', null]);
+ok('and the omission is explained', l2a.report.warnings.some((w) =>
+  /shares an institution/.test(w)));
+
+check('ORCID carried', l2a.ir.authors[0].orcid, '0000-0001-5207-5029');
+// \keywords lives INSIDE the abstract in llncs.
+check('keywords lifted out of the abstract', l2a.ir.keywords,
+  ['automated driving', 'trust', 'takeover request', 'user study']);
+ok('and removed from the abstract text', !/keywords/.test(l2a.ir.abstract));
+ok('abstract itself survived', /within-subjects study/.test(l2a.ir.abstract));
+
+ok('emits acmart', /\\documentclass\[[^\]]*\]\{acmart\}/.test(l2a.out));
+ok('short title becomes \\title[...]',
+  l2a.out.includes('\\title[Trust Calibration in Automated Driving]'));
+check('body carried byte-for-byte', bodyOf(l2a.out), bodyOf(LLNCS));
+
+group('acmart -> llncs');
+const a2l = convert(acmart, llncs, ACM);
+
+ok('emits llncs', /\\documentclass\[[^\]]*\]\{llncs\}/.test(a2l.out));
+ok('authors carry \\inst indices',
+  /Mark Colley\\inst\{1\}/.test(a2l.out) && /Jane Doe\\inst\{2\}/.test(a2l.out),
+  a2l.out.match(/\\author\{[\s\S]*?\}/)?.[0]);
+ok('ORCID emitted as \\orcidID (llncs has one)',
+  a2l.out.includes('\\orcidID{0000-0001-5207-5029}'));
+ok('institutions emitted as one \\and-separated block',
+  /\\institute\{[\s\S]*\\and[\s\S]*\}/.test(a2l.out));
+ok('emails sit inside the institute block',
+  /\\institute\{[\s\S]*\\email\{mark\.colley@uni-ulm\.de\}/.test(a2l.out));
+ok('keywords go inside the abstract, \\and-separated',
+  /\\begin\{abstract\}[\s\S]*\\keywords\{automated driving \\and trust/.test(a2l.out));
+ok('bibliographystyle swapped', a2l.out.includes('\\bibliographystyle{splncs04}'));
+ok('CCS concepts preserved as a comment',
+  a2l.out.includes('% [venue-shift] ACM CCS concepts'));
+ok('booktabs kept — llncs does not provide it', a2l.out.includes('booktabs'));
+check('body carried byte-for-byte', bodyOf(a2l.out), bodyOf(ACM));
+
+group('llncs -> ieeetran');
+const l2i = convert(llncs, ieeetran, LLNCS);
+ok('emits IEEEtran', /\\documentclass\[[^\]]*\]\{IEEEtran\}/.test(l2i.out));
+ok('llncs class options not smuggled in',
+  !/\\documentclass\[[^\]]*runningheads/.test(l2i.out), l2i.out.split('\n')[0]);
+ok('authors become IEEE blocks', l2i.out.includes('\\IEEEauthorblockN{Mark Colley}'));
+ok('graphicx added — llncs did declare it, so it carries', l2i.out.includes('graphicx'));
+check('body carried byte-for-byte', bodyOf(l2i.out), bodyOf(LLNCS));
+
+group('llncs shared-affiliation dedup');
+// Three authors, two institutions: the emitted llncs must write two entries.
+const backToLlncs = convert(acmart, llncs, l2a.out);
+const instBlock = backToLlncs.out.match(/\\institute\{[\s\S]*?\n\n/);
+ok('two institutions for three authors',
+  (l2a.ir.authors.length === 3) &&
+  ((instBlock?.[0].match(/\\and/g) || []).length === 1),
+  instBlock && instBlock[0].slice(0, 200));
 
 /* ---------------------------------------------------------------- round trip */
 group('round trip acmart -> elsarticle -> acmart');

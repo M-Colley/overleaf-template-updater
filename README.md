@@ -331,9 +331,15 @@ cut down for an ACM conference. The prose is the same. The front matter is
 entirely different furniture, and moving it by hand is a fiddly hour that is
 easy to get subtly wrong.
 
-Three venues, converting between any pair in either direction: **acmart**
-(CHI, CSCW, UIST, AutomotiveUI), **elsarticle** (Elsevier journals) and
-**IEEEtran** (IEEE conferences and transactions).
+Four venues, converting between any pair in either direction — twelve
+directions out of eight functions:
+
+| | |
+|---|---|
+| **acmart** | CHI, CSCW, UIST, AutomotiveUI, IMWUT, ACM journals |
+| **elsarticle** | Elsevier journals |
+| **IEEEtran** | IEEE conferences and transactions |
+| **llncs** | Springer LNCS, INTERACT, many Springer conferences |
 
 It's available **both in the extension and as a CLI**, running the same code —
 the venue profiles live in [`extension/lib/venues/`](extension/lib/venues) and
@@ -427,6 +433,29 @@ Checklist  paper-elsarticle-MIGRATION.md
 | ORCID | `\orcid{}` | — | — | ⚠️ preserved as a comment |
 | teaser figure | `\begin{teaserfigure}` | — | — | ⚠️ preserved as a comment |
 
+**llncs links authors to institutions by number.** All authors live in one
+`\author{}` and all institutions in one `\institute{}`, both split by `\and`,
+joined positionally with `\inst{n}`:
+
+```latex
+\author{Mark Colley\inst{1}\orcidID{0000-…} \and Jane Doe\inst{2} \and Alex Roe\inst{1}}
+\institute{Institute of Media Informatics, Ulm University, Ulm, Germany\\
+\email{mark.colley@uni-ulm.de} \and
+Department of Computer Science, Example University, Boston, USA}
+```
+
+So parsing has to resolve those indices back out, and *emitting* llncs has to go
+the other way — deduplicate identical affiliations and renumber, because three
+authors at two institutions must produce two entries, not three. `\keywords` also
+lives **inside** the abstract environment in llncs, so it gets lifted out on the
+way in and put back on the way out.
+
+One subtlety worth knowing: llncs attaches `\email{}` to the *institution*, not
+the person. Two authors sharing an institution share one address in the source,
+so carrying it to both would attribute someone else's email to the second author.
+Only the first author to claim an institution gets it, and the omission is
+reported rather than silent.
+
 **IEEEtran's author blocks are the awkward case.** Where acmart has
 `\institution{}`/`\city{}` and elsarticle has `organization={}`, IEEE gives you
 free text separated by `\\`, with no marked-up fields at all:
@@ -455,8 +484,8 @@ five minutes that are genuinely yours.
 
 Venues are profiles with a `parse()` and an `emit()`, mapping through a shared
 intermediate representation ([`cli/venues/ir.mjs`](cli/venues/ir.mjs)) — so a new
-venue costs one parser and one emitter, not a converter per pair. Three venues
-means six conversion directions out of six functions.
+venue costs one parser and one emitter, not a converter per pair. Four venues
+means twelve conversion directions out of eight functions.
 
 **Packages are reconciled against the target class, in both directions**
 ([`cli/venues/packages.mjs`](cli/venues/packages.mjs)). Getting this wrong
@@ -519,7 +548,7 @@ PRs adding templates are welcome.
 npm test
 ```
 
-Four suites, 213 assertions:
+Four suites, 245 assertions:
 
 | Suite | Covers |
 |---|---|

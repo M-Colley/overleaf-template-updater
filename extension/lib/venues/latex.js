@@ -161,6 +161,48 @@ export function tidy(s) {
   return (s || '').replace(/\s*\n\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
 }
 
+/**
+ * Split on a command that sits at brace depth 0.
+ *
+ * llncs writes all its authors in one \author{A \and B \and C} and all its
+ * institutions in one \institute{X \and Y}, so splitting on \and is how you
+ * recover the individual entries — but only the \and separators at the top
+ * level, never one nested inside somebody's \inst{} or a braced group.
+ */
+export function splitOnCommand(text, name) {
+  const re = new RegExp('\\\\' + name + '(?![a-zA-Z@])', 'g');
+  const parts = [];
+  let last = 0, m;
+
+  while ((m = re.exec(text)) !== null) {
+    if (isCommented(text, m.index)) continue;
+
+    let depth = 0;
+    for (let i = 0; i < m.index; i++) {
+      const c = text[i];
+      if (c === '\\') { i++; continue; }
+      if (c === '{') depth++;
+      else if (c === '}') depth--;
+    }
+    if (depth !== 0) continue;
+
+    parts.push(text.slice(last, m.index));
+    last = m.index + m[0].length;
+  }
+  parts.push(text.slice(last));
+  return parts.map((p) => p.trim()).filter(Boolean);
+}
+
+/** Remove every uncommented \name{...} from a string, returning what is left. */
+export function stripCommand(text, name, arity = 1) {
+  let out = text;
+  for (;;) {
+    const cmd = findCommand(out, name, arity);
+    if (!cmd) return out;
+    out = out.slice(0, cmd.start) + out.slice(cmd.end);
+  }
+}
+
 /** Split "a, b, c" or "a \sep b \sep c" into parts. */
 export function splitList(s, sep = ',') {
   const raw = sep === 'sep'

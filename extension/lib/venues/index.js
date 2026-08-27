@@ -9,11 +9,12 @@
 import * as acmart from './acmart.js';
 import * as elsarticle from './elsarticle.js';
 import * as ieeetran from './ieeetran.js';
+import * as llncs from './llncs.js';
 
 export { Report } from './ir.js';
 export { documentClass } from './latex.js';
 
-export const VENUES = [acmart, elsarticle, ieeetran];
+export const VENUES = [acmart, elsarticle, ieeetran, llncs];
 
 /** Which venue does this document use, by its \documentclass? */
 export function detectVenue(className) {

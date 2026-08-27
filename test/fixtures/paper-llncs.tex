@@ -1,0 +1,71 @@
+%% A realistic Springer LNCS paper. Springer ships no sample .tex on CTAN, so
+%% this follows the shape llncs.cls itself defines. Used to test venue-shift.
+\documentclass[runningheads]{llncs}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+
+\begin{document}
+
+\title{Trust Calibration in Highly Automated Driving\thanks{Supported by the
+German Research Foundation.}}
+\titlerunning{Trust Calibration in Automated Driving}
+
+\author{Mark Colley\inst{1}\orcidID{0000-0001-5207-5029} \and
+Jane Doe\inst{2} \and
+Alex Roe\inst{1}}
+
+\authorrunning{M. Colley et al.}
+
+\institute{Institute of Media Informatics, Ulm University, Ulm, Germany\\
+\email{mark.colley@uni-ulm.de} \and
+Department of Computer Science, Example University, Boston, USA\\
+\email{jane.doe@example.edu}}
+
+\maketitle
+
+\begin{abstract}
+Automated vehicles must communicate their intent to build appropriate trust.
+We report a within-subjects study with 24 participants examining how takeover
+requests shape trust over repeated exposure.
+
+\keywords{automated driving \and trust \and takeover request \and user study}
+\end{abstract}
+
+\section{Introduction}
+Trust in automated vehicles is neither uniformly good nor uniformly
+bad~\cite{lee2004trust}. We examine how it develops across repeated takeovers.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figures/apparatus}
+  \caption{The driving simulator used in the study.}
+  \label{fig:apparatus}
+\end{figure}
+
+\section{Method}
+We ran a within-subjects experiment with 24 participants.
+
+\begin{table}[t]
+  \caption{Participant demographics.}
+  \label{tab:demographics}
+  \begin{tabular}{lr}
+    \toprule
+    Measure & Value \\
+    \midrule
+    Participants & 24 \\
+    Mean age & 27.4 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Results}
+Trust increased over exposure, $F(2,46) = 8.1$, $p < .001$.
+
+\section{Conclusion}
+Repeated exposure calibrates trust.
+
+\bibliographystyle{splncs04}
+\bibliography{references}
+
+\end{document}
