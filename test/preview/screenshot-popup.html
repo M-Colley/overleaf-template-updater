@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Popup screenshot</title>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: flex; align-items: flex-start; justify-content: center; gap: 36px;
+    padding: 34px 34px 26px;
+    background: #f2f4f5;
+    font: 13px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: #5c676e;
+    box-sizing: border-box;
+  }
+  body.dark { background: #0e1113; color: #8b969d; }
+  figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .shell {
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 2px 6px rgba(12,20,26,.10), 0 18px 44px -20px rgba(12,20,26,.40);
+  }
+  body.dark .shell { box-shadow: 0 2px 6px rgba(0,0,0,.5), 0 18px 44px -20px rgba(0,0,0,.85); }
+  iframe { width: 336px; border: 0; display: block; }
+  figcaption {
+    font-size: 11.5px; letter-spacing: .01em; text-align: center; max-width: 336px;
+  }
+  figcaption b { color: #12181b; font-weight: 600; }
+  body.dark figcaption b { color: #e9eef0; }
+</style>
+</head>
+<body>
+
+<script>
+/* Renders the real popup.html + popup.js against stubbed chrome.* APIs, once
+   per scenario. Nothing here restates the popup's markup or styling. */
+const DARK = new URLSearchParams(location.search).get('theme') === 'dark';
+if (DARK) document.body.classList.add('dark');
+
+const SCENARIOS = [
+  {
+    caption: '<b>Active on a project</b><br>Confirms it is running, and opens the panel.',
+    url: 'https://de.overleaf.com/project/61a8757b541901373460174a',
+    pong: { ok: true, projectId: '61a8757b541901373460174a', mounted: true },
+  },
+  {
+    caption: '<b>An unrecognised host</b><br>Offers to enable one self-hosted domain.',
+    url: 'https://overleaf.uni-ulm.de/project/61a8757b541901373460174a',
+    pong: null, granted: false,
+  },
+];
+
+// Lifts the stylesheet's own prefers-color-scheme block so the dark shot uses
+// the real tokens rather than any colour restated here.
+const DARK_LIFT = `<script>
+  addEventListener('load', () => {
+    const out = [];
+    for (const sheet of document.styleSheets) {
+      let rules; try { rules = sheet.cssRules; } catch { continue; }
+      for (const rule of rules) {
+        if (rule.type === CSSRule.MEDIA_RULE &&
+            /prefers-color-scheme:\\s*dark/.test(rule.conditionText)) {
+          for (const inner of rule.cssRules) out.push(inner.cssText);
+        }
+      }
+    }
+    const s = document.createElement('style');
+    s.textContent = out.join(String.fromCharCode(10));
+    document.head.appendChild(s);
+  });
+<\/script>`;
+
+function stubFor(s) {
+  return `<script>
+    window.chrome = {
+      tabs: {
+        query: async () => [{ id: 1, url: ${JSON.stringify(s.url)} }],
+        sendMessage: async () => {
+          const pong = ${JSON.stringify(s.pong)};
+          if (!pong) throw new Error('no receiver');
+          return pong;
+        },
+        reload: async () => {},
+      },
+      permissions: { contains: async () => ${!!s.granted}, request: async () => true },
+      runtime: { sendMessage: async () => ({ ok: true }) },
+    };
+  <\/script>`;
+}
+
+(async () => {
+  const html = await (await fetch('../../extension/popup/popup.html')).text();
+
+  for (const s of SCENARIOS) {
+    const fig = document.createElement('figure');
+    fig.innerHTML = `<div class="shell"><iframe scrolling="no"></iframe></div>
+                     <figcaption>${s.caption}</figcaption>`;
+    document.body.appendChild(fig);
+
+    const frame = fig.querySelector('iframe');
+    // srcdoc resolves relative URLs against THIS page, so repoint both assets.
+    frame.srcdoc = html
+      .replace('href="../styles/base.css"', 'href="../../extension/styles/base.css"')
+      .replace(
+        '<script src="popup.js"><\/script>',
+        stubFor(s) + (DARK ? DARK_LIFT : '') +
+        '<script src="../../extension/popup/popup.js"><\/script>'
+      );
+
+    // Size each frame to its content once the popup has finished rendering.
+    frame.addEventListener('load', () => {
+      setTimeout(() => {
+        const d = frame.contentDocument;
+        frame.style.height = d.documentElement.scrollHeight + 'px';
+        document.documentElement.setAttribute('data-ready', '1');
+      }, 250);
+    });
+  }
+})();
+</script>
+</body>
+</html>

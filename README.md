@@ -103,6 +103,16 @@ grant one domain at a time rather than the extension demanding access to every
 site up front. Everything it does is origin-relative — including the backup
 download, which follows the tab you're actually on.
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/popup-dark.png">
+    <img src="docs/img/popup.png" width="820"
+         alt="Two states of the toolbar popup. Left: 'Active on this project' on de.overleaf.com, with an 'Open the panel' button. Right: 'Not enabled on this site' on overleaf.uni-ulm.de, explaining that self-hosted Overleaf instances can be granted access, with an 'Enable on overleaf.uni-ulm.de' button and a warning to only grant this on a site you know is your Overleaf instance.">
+  </picture>
+</p>
+
+<p align="center"><sub><i>The toolbar popup answers &ldquo;why isn&rsquo;t it showing?&rdquo; directly — it reports what it sees on the current tab and offers the one action that fixes it.</i></sub></p>
+
 ### Tracked templates
 
 | Template | Files | Handling | Source |
@@ -287,17 +297,22 @@ both render the real CSS and JS against mock data covering every state:
 python -m http.server 8731
 ```
 
-The README screenshots are regenerated from `test/preview/screenshot.html` — the
-same real `panel.css` and `ui.js`, captured headless so they never drift from the
-actual UI:
+The README screenshots are regenerated from `test/preview/screenshot.html` and
+`test/preview/screenshot-popup.html` — the same real CSS and JS the extension
+ships, captured headless so the images can never drift from the actual UI:
 
 ```bash
 chrome --headless=new --force-device-scale-factor=2 --window-size=1280,840 --screenshot=docs/img/panel.png http://localhost:8731/test/preview/screenshot.html
 ```
 
-Append `?theme=dark` for the dark variant; it lifts the real
-`@media (prefers-color-scheme: dark)` rules out of the stylesheet rather than
-restating any colours.
+```bash
+chrome --headless=new --force-device-scale-factor=2 --window-size=860,392 --screenshot=docs/img/popup.png http://localhost:8731/test/preview/screenshot-popup.html
+```
+
+Append `?theme=dark` to either for the dark variant. It lifts the real
+`@media (prefers-color-scheme: dark)` rules out of the stylesheet at runtime
+rather than restating any colours, so the dark screenshots follow the palette
+automatically.
 
 Package the extension with `python tools/package.py`, which validates the
 manifest first and writes a zip to `dist/`.
