@@ -1,0 +1,562 @@
+/* Template Updater panel.
+ *
+ * Design direction: a precision instrument, not a marketing surface. It sits
+ * inside someone's manuscript editor and reports version facts about their
+ * paper, so the visual language is a well-made developer tool -- hairline
+ * rules, a strict 4px rhythm, one accent, and typography doing the work.
+ *
+ * Two deliberate choices:
+ *   - Petrol teal for the accent rather than Overleaf's green. This is a
+ *     third-party add-on and should never read as native Overleaf chrome.
+ *   - System font stacks, not a webfont. A content script that pulls a remote
+ *     font fights the host page's CSP, flashes on every open, and gives store
+ *     reviewers something to ask about. Character comes from tabular numerals,
+ *     tracked micro-labels and spacing instead.
+ *
+ * Everything is scoped under #otu-root / #otu-launch so nothing leaks into
+ * Overleaf's own styles, and every token is defined for light and dark. */
+
+#otu-root, #otu-launch {
+  --otu-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont,
+              "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --otu-mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono",
+              "Roboto Mono", Menlo, Consolas, monospace;
+
+  --otu-bg: #ffffff;
+  --otu-raised: #ffffff;
+  --otu-sunken: #f6f7f7;
+  --otu-line: rgba(17, 27, 33, .11);
+  --otu-line-soft: rgba(17, 27, 33, .06);
+
+  --otu-text: #12181b;
+  --otu-dim: #5c676e;
+  --otu-faint: #8b959b;
+
+  --otu-acc: #0d5c55;
+  --otu-acc-hover: #0a4a44;
+  --otu-acc-soft: rgba(13, 92, 85, .09);
+  --otu-on-acc: #ffffff;
+
+  --otu-stale: #b45309;
+  --otu-stale-bg: rgba(180, 83, 9, .10);
+  --otu-fresh: #15803d;
+  --otu-fresh-bg: rgba(21, 128, 61, .10);
+  --otu-mod: #6d4bc4;
+  --otu-mod-bg: rgba(109, 75, 196, .10);
+  --otu-none: #94a3b0;
+  --otu-none-bg: rgba(148, 163, 176, .13);
+  --otu-err: #b42318;
+  --otu-err-bg: rgba(180, 35, 24, .09);
+
+  --otu-shadow: 0 1px 2px rgba(16, 24, 32, .05), 0 8px 24px -12px rgba(16, 24, 32, .18);
+  --otu-shadow-lg: -18px 0 48px -24px rgba(12, 20, 26, .35);
+  --otu-r: 10px;
+  --otu-r-sm: 7px;
+}
+
+@media (prefers-color-scheme: dark) {
+  #otu-root, #otu-launch {
+    --otu-bg: #14181a;
+    --otu-raised: #1b2124;
+    --otu-sunken: #101416;
+    --otu-line: rgba(255, 255, 255, .10);
+    --otu-line-soft: rgba(255, 255, 255, .055);
+
+    --otu-text: #e9eef0;
+    --otu-dim: #9aa6ad;
+    --otu-faint: #6f7c84;
+
+    --otu-acc: #2fa89b;
+    --otu-acc-hover: #3dbcae;
+    --otu-acc-soft: rgba(47, 168, 155, .14);
+    --otu-on-acc: #06201e;
+
+    --otu-stale: #e2a13c;
+    --otu-stale-bg: rgba(226, 161, 60, .14);
+    --otu-fresh: #4ec97e;
+    --otu-fresh-bg: rgba(78, 201, 126, .13);
+    --otu-mod: #a78bfa;
+    --otu-mod-bg: rgba(167, 139, 250, .14);
+    --otu-none: #7c8a93;
+    --otu-none-bg: rgba(124, 138, 147, .16);
+    --otu-err: #f2837a;
+    --otu-err-bg: rgba(242, 131, 122, .13);
+
+    --otu-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px -14px rgba(0, 0, 0, .7);
+    --otu-shadow-lg: -18px 0 56px -24px rgba(0, 0, 0, .75);
+  }
+}
+
+/* ------------------------------------------------------------------ launcher */
+
+#otu-launch {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2147483000;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 15px 9px 12px;
+  font-family: var(--otu-sans);
+  font-size: 12.5px;
+  font-weight: 550;
+  letter-spacing: -.005em;
+  color: var(--otu-on-acc);
+  background: var(--otu-acc);
+  border: none;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(12, 20, 26, .18), 0 10px 28px -14px rgba(12, 20, 26, .5);
+  cursor: pointer;
+  transition: transform .16s cubic-bezier(.2, .7, .3, 1), background .16s ease;
+}
+#otu-launch:hover { background: var(--otu-acc-hover); transform: translateY(-1px); }
+#otu-launch:active { transform: translateY(0); }
+#otu-launch:focus-visible { outline: 2px solid var(--otu-acc); outline-offset: 3px; }
+#otu-launch[hidden] { display: none; }
+#otu-launch .otu-glyph { font-size: 14px; line-height: 1; opacity: .9; }
+
+/* --------------------------------------------------------------------- shell */
+
+#otu-root {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(540px, 100vw);
+  z-index: 2147483001;
+  display: flex;
+  flex-direction: column;
+  background: var(--otu-bg);
+  color: var(--otu-text);
+  border-left: 1px solid var(--otu-line);
+  box-shadow: var(--otu-shadow-lg);
+  font-family: var(--otu-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  animation: otu-slide .26s cubic-bezier(.2, .8, .25, 1);
+}
+#otu-root[hidden] { display: none; }
+
+@keyframes otu-slide {
+  from { transform: translateX(16px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+#otu-root *, #otu-root *::before, #otu-root *::after { box-sizing: border-box; }
+
+/* -------------------------------------------------------------------- header */
+
+#otu-root .otu-head {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid var(--otu-line);
+  background: var(--otu-bg);
+}
+#otu-root .otu-head h2 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -.012em;
+}
+#otu-root .otu-head p {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  color: var(--otu-dim);
+  font-variant-numeric: tabular-nums;
+}
+#otu-root .otu-close {
+  flex: none;
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border: none;
+  border-radius: var(--otu-r-sm);
+  background: transparent;
+  color: var(--otu-faint);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .14s ease, color .14s ease;
+}
+#otu-root .otu-close:hover { background: var(--otu-sunken); color: var(--otu-text); }
+
+/* Indeterminate progress hairline, shown only while scanning. */
+#otu-root .otu-head::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--otu-acc), transparent);
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+#otu-root.otu-busy .otu-head::after {
+  opacity: 1;
+  animation: otu-sweep 1.15s ease-in-out infinite;
+}
+@keyframes otu-sweep {
+  0%   { background-position: -45% 0; }
+  100% { background-position: 145% 0; }
+}
+
+/* ---------------------------------------------------------------------- body */
+
+#otu-root .otu-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 18px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--otu-line) transparent;
+}
+#otu-root .otu-body::-webkit-scrollbar { width: 10px; }
+#otu-root .otu-body::-webkit-scrollbar-thumb {
+  background: var(--otu-line); border-radius: 99px;
+  border: 3px solid var(--otu-bg);
+}
+
+/* ------------------------------------------------------------------ messages */
+
+#otu-root .otu-status,
+#otu-root .otu-warn,
+#otu-root .otu-error {
+  padding: 11px 13px;
+  border-radius: var(--otu-r);
+  font-size: 12px;
+  margin-bottom: 10px;
+  border: 1px solid transparent;
+}
+#otu-root .otu-status {
+  background: var(--otu-sunken);
+  border-color: var(--otu-line-soft);
+  color: var(--otu-dim);
+}
+#otu-root .otu-status strong { color: var(--otu-text); font-weight: 600; }
+#otu-root .otu-warn {
+  background: var(--otu-stale-bg);
+  border-color: color-mix(in srgb, var(--otu-stale) 26%, transparent);
+  color: var(--otu-stale);
+}
+#otu-root .otu-error {
+  background: var(--otu-err-bg);
+  border-color: color-mix(in srgb, var(--otu-err) 26%, transparent);
+  color: var(--otu-err);
+  white-space: pre-wrap;
+}
+#otu-root .otu-status code, #otu-root .otu-warn code {
+  font-family: var(--otu-mono);
+  font-size: 11px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+/* A tracked micro-label used to separate groups. */
+#otu-root .otu-section {
+  margin: 18px 0 8px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--otu-faint);
+}
+#otu-root .otu-section:first-child { margin-top: 4px; }
+
+/* --------------------------------------------------------------------- items */
+
+#otu-root .otu-item {
+  border: 1px solid var(--otu-line);
+  border-radius: var(--otu-r);
+  margin-bottom: 8px;
+  background: var(--otu-raised);
+  box-shadow: var(--otu-shadow);
+  overflow: hidden;
+  transition: border-color .15s ease;
+  animation: otu-rise .3s cubic-bezier(.2, .8, .25, 1) backwards;
+}
+#otu-root .otu-item:hover { border-color: color-mix(in srgb, var(--otu-text) 18%, transparent); }
+@keyframes otu-rise {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: none; }
+}
+
+#otu-root .otu-item-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 11px;
+  align-items: start;
+  padding: 12px 13px;
+}
+
+/* Checkbox, restyled so it reads as part of the panel rather than the OS. */
+#otu-root .otu-item-head input[type=checkbox] {
+  appearance: none;
+  flex: none;
+  width: 16px; height: 16px;
+  margin: 1px 0 0;
+  border: 1.5px solid color-mix(in srgb, var(--otu-text) 28%, transparent);
+  border-radius: 5px;
+  background: var(--otu-bg);
+  cursor: pointer;
+  display: grid; place-content: center;
+  transition: background .13s ease, border-color .13s ease;
+}
+#otu-root .otu-item-head input[type=checkbox]::after {
+  content: "";
+  width: 9px; height: 9px;
+  transform: scale(0);
+  transition: transform .13s cubic-bezier(.3, 1.5, .5, 1);
+  background: var(--otu-on-acc);
+  clip-path: polygon(14% 46%, 0 60%, 39% 100%, 100% 22%, 86% 8%, 39% 71%);
+}
+#otu-root .otu-item-head input[type=checkbox]:checked {
+  background: var(--otu-acc);
+  border-color: var(--otu-acc);
+}
+#otu-root .otu-item-head input[type=checkbox]:checked::after { transform: scale(1); }
+#otu-root .otu-item-head input[type=checkbox]:disabled {
+  opacity: .38; cursor: not-allowed;
+}
+#otu-root .otu-item-head input[type=checkbox]:focus-visible {
+  outline: 2px solid var(--otu-acc); outline-offset: 2px;
+}
+
+#otu-root .otu-item-main { min-width: 0; }
+
+#otu-root .otu-file {
+  font-family: var(--otu-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  color: var(--otu-text);
+  word-break: break-all;
+}
+
+/* The version delta is the whole point of the tool, so it gets to be the
+   loudest typographic object in the row. Tabular numerals keep the columns
+   from shifting as versions change width. */
+#otu-root .otu-delta {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin-top: 5px;
+  font-family: var(--otu-mono);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+#otu-root .otu-v { color: var(--otu-dim); }
+#otu-root .otu-v-new { color: var(--otu-text); font-weight: 650; }
+#otu-root .otu-arrow { color: var(--otu-faint); font-size: 11px; }
+#otu-root .otu-delta .otu-single { color: var(--otu-dim); }
+
+#otu-root .otu-meta {
+  margin-top: 5px;
+  font-size: 11.5px;
+  color: var(--otu-dim);
+}
+#otu-root .otu-note {
+  margin-top: 7px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--otu-dim);
+  padding-left: 9px;
+  border-left: 2px solid var(--otu-line);
+}
+#otu-root .otu-note strong { color: var(--otu-text); font-weight: 600; }
+
+#otu-root .otu-tag {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--otu-sunken);
+  border: 1px solid var(--otu-line-soft);
+  color: var(--otu-faint);
+  font-size: 10.5px;
+  font-weight: 550;
+}
+
+/* Status: a dot plus a word, rather than a shouty uppercase pill. */
+#otu-root .otu-badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: -.005em;
+  white-space: nowrap;
+}
+#otu-root .otu-badge::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 99px;
+  background: currentColor;
+}
+#otu-root .otu-b-outdated { color: var(--otu-stale); background: var(--otu-stale-bg); }
+#otu-root .otu-b-current  { color: var(--otu-fresh); background: var(--otu-fresh-bg); }
+#otu-root .otu-b-modified { color: var(--otu-mod);   background: var(--otu-mod-bg); }
+#otu-root .otu-b-unknown,
+#otu-root .otu-b-absent,
+#otu-root .otu-b-ahead    { color: var(--otu-none);  background: var(--otu-none-bg); }
+
+/* --------------------------------------------------------------------- diff */
+
+#otu-root .otu-actions {
+  padding: 0 13px 11px;
+  display: flex;
+  gap: 10px;
+}
+#otu-root .otu-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--otu-sans);
+  font-size: 11.5px;
+  font-weight: 550;
+  color: var(--otu-acc);
+  cursor: pointer;
+}
+#otu-root .otu-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+#otu-root .otu-diff {
+  margin: 0;
+  padding: 10px 0;
+  max-height: 300px;
+  overflow: auto;
+  background: var(--otu-sunken);
+  border-top: 1px solid var(--otu-line);
+  font-family: var(--otu-mono);
+  font-size: 11px;
+  line-height: 1.55;
+  white-space: pre;
+  tab-size: 2;
+}
+#otu-root .otu-diff span {
+  display: block;
+  padding: 0 13px 0 10px;
+  border-left: 3px solid transparent;
+}
+#otu-root .otu-diff .add {
+  background: var(--otu-fresh-bg);
+  border-left-color: color-mix(in srgb, var(--otu-fresh) 55%, transparent);
+  color: color-mix(in srgb, var(--otu-fresh) 72%, var(--otu-text));
+}
+#otu-root .otu-diff .del {
+  background: var(--otu-err-bg);
+  border-left-color: color-mix(in srgb, var(--otu-err) 55%, transparent);
+  color: color-mix(in srgb, var(--otu-err) 72%, var(--otu-text));
+}
+#otu-root .otu-diff .ctx { color: var(--otu-faint); }
+#otu-root .otu-diff .sep {
+  color: var(--otu-faint);
+  opacity: .6;
+  margin: 5px 0;
+  user-select: none;
+}
+#otu-root .otu-diff .head {
+  color: var(--otu-dim);
+  font-weight: 650;
+  padding-bottom: 5px;
+}
+
+/* -------------------------------------------------------------------- footer */
+
+#otu-root .otu-foot {
+  border-top: 1px solid var(--otu-line);
+  padding: 12px 18px 14px;
+  background: var(--otu-bg);
+}
+#otu-root .otu-foot label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11.5px;
+  color: var(--otu-dim);
+  margin-bottom: 11px;
+  cursor: pointer;
+}
+#otu-root .otu-foot input[type=checkbox] {
+  appearance: none;
+  width: 15px; height: 15px;
+  flex: none;
+  border: 1.5px solid color-mix(in srgb, var(--otu-text) 28%, transparent);
+  border-radius: 5px;
+  background: var(--otu-bg);
+  cursor: pointer;
+  display: grid; place-content: center;
+}
+#otu-root .otu-foot input[type=checkbox]::after {
+  content: "";
+  width: 9px; height: 9px;
+  transform: scale(0);
+  transition: transform .13s cubic-bezier(.3, 1.5, .5, 1);
+  background: var(--otu-on-acc);
+  clip-path: polygon(14% 46%, 0 60%, 39% 100%, 100% 22%, 86% 8%, 39% 71%);
+}
+#otu-root .otu-foot input[type=checkbox]:checked {
+  background: var(--otu-acc); border-color: var(--otu-acc);
+}
+#otu-root .otu-foot input[type=checkbox]:checked::after { transform: scale(1); }
+
+#otu-root .otu-buttons { display: flex; gap: 8px; }
+#otu-root button.otu-primary,
+#otu-root button.otu-secondary {
+  font-family: var(--otu-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -.008em;
+  border-radius: var(--otu-r-sm);
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: background .14s ease, border-color .14s ease, opacity .14s ease;
+}
+#otu-root button.otu-primary {
+  flex: 1;
+  border: none;
+  background: var(--otu-acc);
+  color: var(--otu-on-acc);
+}
+#otu-root button.otu-primary:hover:not(:disabled) { background: var(--otu-acc-hover); }
+#otu-root button.otu-primary:disabled {
+  background: var(--otu-sunken);
+  color: var(--otu-faint);
+  cursor: not-allowed;
+}
+#otu-root button.otu-secondary {
+  border: 1px solid var(--otu-line);
+  background: transparent;
+  color: var(--otu-text);
+}
+#otu-root button.otu-secondary:hover { background: var(--otu-sunken); }
+#otu-root button:focus-visible { outline: 2px solid var(--otu-acc); outline-offset: 2px; }
+
+/* ------------------------------------------------------------------ skeleton */
+
+#otu-root .otu-skel {
+  height: 62px;
+  border-radius: var(--otu-r);
+  margin-bottom: 8px;
+  border: 1px solid var(--otu-line-soft);
+  background: linear-gradient(100deg,
+    var(--otu-sunken) 30%,
+    color-mix(in srgb, var(--otu-sunken) 55%, var(--otu-bg)) 50%,
+    var(--otu-sunken) 70%);
+  background-size: 220% 100%;
+  animation: otu-shimmer 1.3s ease-in-out infinite;
+}
+@keyframes otu-shimmer {
+  from { background-position: 160% 0; }
+  to   { background-position: -60% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #otu-root, #otu-root * { animation: none !important; transition: none !important; }
+}

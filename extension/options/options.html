@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Template Updater — Options</title>
+  <link rel="stylesheet" href="../styles/base.css">
+  <style>
+    body { max-width: 820px; margin: 0 auto; padding: 44px 28px 80px; }
+    header { display: flex; align-items: center; gap: 11px; margin-bottom: 6px; }
+    .mark {
+      width: 30px; height: 30px; flex: none;
+      display: grid; place-items: center;
+      border-radius: 9px;
+      background: var(--acc); color: var(--on-acc);
+      font-size: 16px; line-height: 1;
+    }
+    header h1 { margin: 0; font-size: 17px; }
+    .lede { color: var(--dim); font-size: 13px; margin: 0 0 4px 41px; }
+
+    section {
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      background: var(--raised);
+      padding: 4px 18px 18px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+    section > h2:first-child { margin-top: 18px; }
+
+    .toolbar { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+    #results { font-size: 12.5px; margin-top: 12px; }
+    #results div { padding: 3px 0; font-variant-numeric: tabular-nums; }
+    .muted { color: var(--faint); }
+    td.num { text-align: right; white-space: nowrap; }
+    tfoot td { font-weight: 650; border-top: 1px solid var(--line); border-bottom: none; }
+    .src { font-size: 11px; color: var(--dim); }
+    .usedby { font-size: 11px; color: var(--faint); display: block; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="mark" aria-hidden="true">&#8635;</span>
+    <h1>Template Updater for Overleaf</h1>
+  </header>
+  <p class="lede">What it tracks, where every file comes from, and what it has cached.</p>
+
+  <section>
+    <h2>Behaviour</h2>
+    <label class="row">
+      <input type="checkbox" id="backupDefault" checked>
+      <span>Download a project <code>.zip</code> backup before applying changes</span>
+    </label>
+    <label class="row">
+      <input type="checkbox" id="autoClose" checked>
+      <span>Close the panel automatically after a successful update</span>
+    </label>
+    <p class="sub" style="margin-top:12px">
+      Overleaf records every change in its own History panel, so updates can be
+      reverted there even without the backup. On failure the panel always stays
+      open so the error can be read.
+    </p>
+  </section>
+
+  <section>
+    <h2>Cached template files</h2>
+    <p class="sub">
+      Upstream files are cached so opening a second project costs no download.
+      The acmart source is a 15&nbsp;MB archive, but only the files actually
+      needed are kept. A cached file is reused when the package index confirms
+      its version is still current, and otherwise revalidated with a conditional
+      request that usually returns an empty <code>304</code>.
+    </p>
+    <table id="cache"><tbody></tbody></table>
+    <div class="toolbar">
+      <button id="clearCache">Clear cache</button>
+      <span id="cacheMsg" class="muted" style="font-size:12.5px"></span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Tracked templates</h2>
+    <table id="registry"><tbody></tbody></table>
+  </section>
+
+  <section>
+    <h2>Upstream connectivity</h2>
+    <p class="sub">
+      Checks that every source is reachable and still returns a real source file.
+      Run this if a scan reports &ldquo;could not reach upstream&rdquo;.
+    </p>
+    <div class="toolbar"><button id="test" class="primary">Test all sources</button></div>
+    <div id="results"></div>
+  </section>
+
+  <section>
+    <h2>Network scope</h2>
+    <p class="sub" style="margin-bottom:0">
+      The extension only ever fetches from <code>ctan.org</code>,
+      <code>mirror.ctan.org</code>, <code>mirrors.ctan.org</code>,
+      <code>portalparts.acm.org</code>, <code>raw.githubusercontent.com</code> and
+      <code>api.github.com</code>. That allowlist is enforced in
+      <code>background.js</code>, not in the registry, so editing the registry
+      cannot widen it. No analytics, no telemetry, no servers of ours.
+    </p>
+  </section>
+
+  <script src="options.js"></script>
+</body>
+</html>

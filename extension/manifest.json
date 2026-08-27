@@ -1,0 +1,81 @@
+{
+  "manifest_version": 3,
+  "name": "Template Updater for Overleaf",
+  "version": "0.1.0",
+  "description": "Checks your Overleaf project's LaTeX template (acmart, IEEEtran, llncs) against the latest release and updates it in place.",
+  "permissions": [
+    "storage",
+    "downloads",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.overleaf.com/*",
+    "https://overleaf.com/*",
+    "https://*.overleaf.com/*",
+    "https://ctan.org/*",
+    "https://mirror.ctan.org/*",
+    "https://mirrors.ctan.org/*",
+    "https://ctan.math.illinois.edu/*",
+    "https://ftp.fau.de/*",
+    "https://portalparts.acm.org/*",
+    "https://raw.githubusercontent.com/*",
+    "https://api.github.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.overleaf.com/*",
+        "https://overleaf.com/*",
+        "https://*.overleaf.com/*"
+      ],
+      "run_at": "document_idle",
+      "css": [
+        "content/panel.css"
+      ],
+      "js": [
+        "lib/util.js",
+        "lib/unzip.js",
+        "lib/latex.js",
+        "lib/version.js",
+        "lib/diff.js",
+        "lib/overleaf.js",
+        "lib/planner.js",
+        "content/ui.js",
+        "content/content.js"
+      ]
+    }
+  ],
+  "options_page": "options/options.html",
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "registry/templates.json"
+      ],
+      "matches": [
+        "https://www.overleaf.com/*",
+        "https://overleaf.com/*",
+        "https://*.overleaf.com/*"
+      ]
+    }
+  ],
+  "icons": {
+    "16": "icons/16.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "optional_host_permissions": [
+    "https://*/*"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Overleaf Template Updater",
+    "default_icon": {
+      "16": "icons/16.png",
+      "48": "icons/48.png",
+      "128": "icons/128.png"
+    }
+  }
+}

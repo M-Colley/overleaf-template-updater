@@ -1,0 +1,38 @@
+Template Updater for Overleaf
+Copyright (c) 2026 Mark Colley
+Licensed under the MIT License (see LICENSE).
+
+--------------------------------------------------------------------------------
+Third-party material
+--------------------------------------------------------------------------------
+
+This repository contains NO third-party LaTeX template files.
+
+The extension downloads class, style and bibliography-style files at runtime,
+directly from the publishers that distribute them, and writes them into the
+user's own Overleaf project. It does not redistribute them, and the MIT licence
+above does not apply to them. Each remains under its own terms:
+
+  acmart.cls, ACM-Reference-Format.bst, acm*.bbx/.cbx/.dbx
+      Copyright ACM / Boris Veytsman. LaTeX Project Public License (LPPL).
+      Fetched from https://www.acm.org/publications/proceedings-template
+
+  IEEEtran.cls, IEEEtran.bst
+      Copyright Michael Shell. LaTeX Project Public License (LPPL).
+      Fetched from CTAN.
+
+  llncs.cls, splncs04.bst
+      Copyright Springer-Verlag. Distributed under Springer's own terms.
+      Fetched from CTAN.
+
+  elsarticle
+      Copyright Elsevier. Detected and reported only; never downloaded or
+      modified by this tool.
+
+The test suite likewise fetches these files on demand into a gitignored
+directory rather than vendoring them (see test/fixtures.js).
+
+"Overleaf" is a trademark of Digital Science & Research Solutions Ltd. This
+project is not affiliated with, endorsed by, or connected to Overleaf or
+Digital Science. LaTeX templates are the property of their respective
+publishers.

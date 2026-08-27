@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Template Updater</title>
+  <link rel="stylesheet" href="../styles/base.css">
+  <style>
+    body { width: 336px; padding: 16px; }
+    .brand {
+      display: flex; align-items: center; gap: 9px; margin-bottom: 14px;
+    }
+    .mark {
+      width: 26px; height: 26px; flex: none;
+      display: grid; place-items: center;
+      border-radius: 8px;
+      background: var(--acc); color: var(--on-acc);
+      font-size: 14px; line-height: 1;
+    }
+    .brand h1 { margin: 0; }
+    .url {
+      display: block;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      line-height: 1.45;
+      word-break: break-all;
+      margin-top: 7px;
+      opacity: .75;
+    }
+    #actions button { width: 100%; margin-top: 8px; }
+    .hint { font-size: 11.5px; color: var(--faint); margin-top: 11px; }
+    #state strong { display: block; margin-bottom: 2px; }
+    kbd {
+      font-family: var(--mono); font-size: 10.5px;
+      padding: 1px 5px; border-radius: 4px;
+      background: color-mix(in srgb, currentColor 10%, transparent);
+    }
+  </style>
+</head>
+<body>
+  <div class="brand">
+    <span class="mark" aria-hidden="true">&#8635;</span>
+    <h1>Template Updater</h1>
+  </div>
+
+  <div id="state" class="card info">Checking this tab&hellip;</div>
+  <div id="actions"></div>
+  <div class="hint" id="hint"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

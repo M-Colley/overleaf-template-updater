@@ -1,0 +1,223 @@
+/* Shared design tokens and primitives for the extension's own pages (popup and
+ * options). The injected panel carries its own scoped copy of these tokens,
+ * because a content script's stylesheet must not depend on a second file
+ * loading inside the host page.
+ *
+ * Same direction as the panel: a precision instrument. Hairline rules, a strict
+ * rhythm, one petrol-teal accent, system type doing the work with tabular
+ * numerals and tracked micro-labels. */
+
+:root {
+  color-scheme: light dark;
+
+  --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont,
+          "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono",
+          "Roboto Mono", Menlo, Consolas, monospace;
+
+  --bg: #ffffff;
+  --raised: #ffffff;
+  --sunken: #f6f7f7;
+  --line: rgba(17, 27, 33, .11);
+  --line-soft: rgba(17, 27, 33, .06);
+
+  --text: #12181b;
+  --dim: #5c676e;
+  --faint: #8b959b;
+
+  --acc: #0d5c55;
+  --acc-hover: #0a4a44;
+  --acc-soft: rgba(13, 92, 85, .09);
+  --on-acc: #ffffff;
+
+  --stale: #b45309;
+  --stale-bg: rgba(180, 83, 9, .10);
+  --fresh: #15803d;
+  --fresh-bg: rgba(21, 128, 61, .10);
+  --err: #b42318;
+  --err-bg: rgba(180, 35, 24, .09);
+  --info-bg: rgba(13, 92, 85, .07);
+
+  --shadow: 0 1px 2px rgba(16, 24, 32, .05), 0 8px 24px -14px rgba(16, 24, 32, .2);
+  --r: 10px;
+  --r-sm: 7px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14181a;
+    --raised: #1b2124;
+    --sunken: #101416;
+    --line: rgba(255, 255, 255, .10);
+    --line-soft: rgba(255, 255, 255, .055);
+
+    --text: #e9eef0;
+    --dim: #9aa6ad;
+    --faint: #6f7c84;
+
+    --acc: #2fa89b;
+    --acc-hover: #3dbcae;
+    --acc-soft: rgba(47, 168, 155, .14);
+    --on-acc: #06201e;
+
+    --stale: #e2a13c;
+    --stale-bg: rgba(226, 161, 60, .14);
+    --fresh: #4ec97e;
+    --fresh-bg: rgba(78, 201, 126, .13);
+    --err: #f2837a;
+    --err-bg: rgba(242, 131, 122, .13);
+    --info-bg: rgba(47, 168, 155, .10);
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px -16px rgba(0, 0, 0, .7);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -.015em;
+}
+
+h2 {
+  margin: 30px 0 10px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+p.sub { margin: 0 0 14px; color: var(--dim); font-size: 12.5px; }
+
+code {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--sunken);
+  border: 1px solid var(--line-soft);
+}
+
+/* -------------------------------------------------------------------- table */
+
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th, td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: top;
+}
+th {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--faint);
+  border-bottom-color: var(--line);
+}
+td { font-variant-numeric: tabular-nums; }
+tr:last-child td { border-bottom: none; }
+
+/* ------------------------------------------------------------------ buttons */
+
+button {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -.008em;
+  padding: 8px 15px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: var(--text);
+  cursor: pointer;
+  transition: background .14s ease, border-color .14s ease, transform .14s ease;
+}
+button:hover:not(:disabled) { background: var(--sunken); }
+button.primary {
+  border: none;
+  background: var(--acc);
+  color: var(--on-acc);
+}
+button.primary:hover:not(:disabled) { background: var(--acc-hover); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+
+/* --------------------------------------------------------------- checkboxes */
+
+input[type=checkbox] {
+  appearance: none;
+  width: 16px; height: 16px;
+  flex: none;
+  margin: 0;
+  border: 1.5px solid color-mix(in srgb, var(--text) 28%, transparent);
+  border-radius: 5px;
+  background: var(--bg);
+  cursor: pointer;
+  display: grid; place-content: center;
+  transition: background .13s ease, border-color .13s ease;
+}
+input[type=checkbox]::after {
+  content: "";
+  width: 9px; height: 9px;
+  transform: scale(0);
+  transition: transform .13s cubic-bezier(.3, 1.5, .5, 1);
+  background: var(--on-acc);
+  clip-path: polygon(14% 46%, 0 60%, 39% 100%, 100% 22%, 86% 8%, 39% 71%);
+}
+input[type=checkbox]:checked { background: var(--acc); border-color: var(--acc); }
+input[type=checkbox]:checked::after { transform: scale(1); }
+input[type=checkbox]:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+
+label.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 10px 0;
+  cursor: pointer;
+  color: var(--dim);
+}
+label.row span { flex: 1; }
+
+/* -------------------------------------------------------------------- notes */
+
+.card {
+  padding: 12px 14px;
+  border-radius: var(--r);
+  border: 1px solid transparent;
+  font-size: 12.5px;
+}
+.card.ok    { background: var(--fresh-bg); border-color: color-mix(in srgb, var(--fresh) 26%, transparent); color: var(--fresh); }
+.card.warn  { background: var(--stale-bg); border-color: color-mix(in srgb, var(--stale) 26%, transparent); color: var(--stale); }
+.card.info  { background: var(--info-bg);  border-color: var(--line);  color: var(--dim); }
+.card strong { color: inherit; font-weight: 650; }
+
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.t-replace { background: var(--fresh-bg); color: var(--fresh); }
+.t-report  { background: var(--stale-bg); color: var(--stale); }
+
+.ok-text  { color: var(--fresh); }
+.bad-text { color: var(--err); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

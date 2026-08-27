@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "panel-preview",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8731"],
+      "port": 8731,
+      "url": "http://localhost:8731"
+    }
+  ]
+}

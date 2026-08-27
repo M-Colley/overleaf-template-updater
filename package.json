@@ -1,0 +1,13 @@
+{
+  "name": "overleaf-template-updater",
+  "version": "0.1.0",
+  "description": "Detect and update stale LaTeX templates in Overleaf projects, as a Chrome extension and a git-based CLI.",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node test/run.js && node test/run-unzip.js && node test/run-planner.js",
+    "test:offline": "node test/run.js && node test/run-unzip.js && node test/run-planner.js --offline",
+    "otu": "node cli/otu.mjs"
+  },
+  "engines": { "node": ">=18" }
+}

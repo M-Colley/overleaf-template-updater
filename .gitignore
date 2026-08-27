@@ -1,0 +1,10 @@
+node_modules/
+dist/
+
+# Test fixtures are fetched, not vendored: the real class files are third-party
+# works under their own licences (LPPL for IEEEtran/acmart, Springer's own terms
+# for llncs), so this MIT repository must not redistribute them.
+# Only the two small stubs written for this project are committed.
+test/fixtures/*
+!test/fixtures/acmart-old.cls
+!test/fixtures/main.tex

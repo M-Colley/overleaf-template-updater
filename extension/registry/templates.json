@@ -1,0 +1,265 @@
+{
+  "schemaVersion": 1,
+  "updated": "2026-08-27",
+  "note": "Every source below was probed against the live server. 'replace' entries have a verified, downloadable BUILT file. 'report-only' entries are published as .dtx sources only, so no client can produce a correct .cls without running LaTeX -- for those we detect and report drift rather than silently writing a wrong file. CTAN's ctan.org/tex-archive path is a round-robin redirector and individual mirrors intermittently return 403 pages or truncated files, so raw sources carry explicit mirror fallbacks and every downloaded class is checked with expectName before it can be written to a project.",
+  "sources": {
+    "acm-primary-zip": {
+      "kind": "zip",
+      "url": "https://portalparts.acm.org/hippo/latex_templates/acmart-primary.zip",
+      "sizeNote": "~15 MB, downloaded once per browser session and cached",
+      "comment": "ACM's official template archive, linked from acm.org/publications/proceedings-template. This is the ONLY published source of a compiled acmart.cls -- CTAN and github.com/borisveytsman/acmart both ship acmart.dtx sources only, there is no TDS zip and no GitHub release asset. Verified to contain acmart.cls v2.20 (2026/08/16), matching CTAN's latest."
+    }
+  },
+  "templates": [
+    {
+      "id": "acmart",
+      "name": "ACM Primary Article Template (acmart)",
+      "usedBy": [
+        "CHI",
+        "CSCW",
+        "UIST",
+        "AutomotiveUI",
+        "IMWUT/UbiComp",
+        "MobileHCI",
+        "ACM journals"
+      ],
+      "homepage": "https://www.acm.org/publications/proceedings-template",
+      "detect": {
+        "documentclass": [
+          "acmart"
+        ],
+        "files": [
+          "acmart.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "acmart"
+        }
+      },
+      "files": [
+        {
+          "name": "acmart.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "ref": "acm-primary-zip",
+            "member": "acmart-primary/acmart.cls"
+          },
+          "alsoConsider": "unbundle",
+          "recommendationText": "Overleaf's own TeX Live also provides acmart. If you would rather not carry a copy at all, deleting the project-local acmart.cls makes Overleaf use its system version - which is another valid way to stay current.",
+          "versionTracksPackage": true,
+          "expectName": "acmart"
+        },
+        {
+          "name": "ACM-Reference-Format.bst",
+          "action": "replace",
+          "versionFrom": "bst-header",
+          "source": {
+            "ref": "acm-primary-zip",
+            "member": "acmart-primary/ACM-Reference-Format.bst"
+          },
+          "comment": "Taken from the same archive as the class so the two stay in step -- this .bst records the acmart release it was built for."
+        },
+        {
+          "name": "acmauthoryear.bbx",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "ref": "acm-primary-zip",
+            "member": "acmart-primary/acmauthoryear.bbx"
+          },
+          "expectName": "acmauthoryear.bbx"
+        },
+        {
+          "name": "acmauthoryear.cbx",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "ref": "acm-primary-zip",
+            "member": "acmart-primary/acmauthoryear.cbx"
+          },
+          "expectName": "acmauthoryear.cbx"
+        },
+        {
+          "name": "acmnumeric.bbx",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "ref": "acm-primary-zip",
+            "member": "acmart-primary/acmnumeric.bbx"
+          },
+          "expectName": "acmnumeric.bbx"
+        },
+        {
+          "name": "acmnumeric.cbx",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "ref": "acm-primary-zip",
+            "member": "acmart-primary/acmnumeric.cbx"
+          },
+          "expectName": "acmnumeric.cbx"
+        },
+        {
+          "name": "acmdatamodel.dbx",
+          "action": "replace",
+          "versionFrom": "comment-scan",
+          "source": {
+            "ref": "acm-primary-zip",
+            "member": "acmart-primary/acmdatamodel.dbx"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ieeetran",
+      "name": "IEEE Transactions / Conference (IEEEtran)",
+      "usedBy": [
+        "IEEE VIS",
+        "IEEE VR",
+        "ITSC",
+        "IV",
+        "most IEEE conferences and journals"
+      ],
+      "homepage": "https://ctan.org/pkg/ieeetran",
+      "detect": {
+        "documentclass": [
+          "IEEEtran"
+        ],
+        "files": [
+          "IEEEtran.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "file",
+          "file": "IEEEtran.cls"
+        }
+      },
+      "files": [
+        {
+          "name": "IEEEtran.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/IEEEtran/IEEEtran.cls",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/IEEEtran/IEEEtran.cls",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/IEEEtran/IEEEtran.cls"
+            ]
+          },
+          "comment": "CTAN publishes IEEEtran as a built class (282 KB). CTAN's JSON API has no version field for it, so the version is read out of the file itself.",
+          "versionTracksPackage": true,
+          "expectName": "IEEEtran"
+        },
+        {
+          "name": "IEEEtran.bst",
+          "action": "replace",
+          "versionFrom": "comment-scan",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/IEEEtran/bibtex/IEEEtran.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/IEEEtran/bibtex/IEEEtran.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/IEEEtran/bibtex/IEEEtran.bst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "llncs",
+      "name": "Springer Lecture Notes in Computer Science (llncs)",
+      "usedBy": [
+        "LNCS proceedings",
+        "INTERACT",
+        "many Springer conferences"
+      ],
+      "homepage": "https://ctan.org/pkg/llncs",
+      "detect": {
+        "documentclass": [
+          "llncs"
+        ],
+        "files": [
+          "llncs.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "llncs"
+        }
+      },
+      "files": [
+        {
+          "name": "llncs.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/llncs/llncs.cls",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/llncs/llncs.cls",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/llncs/llncs.cls"
+            ]
+          },
+          "versionTracksPackage": true,
+          "expectName": "llncs"
+        },
+        {
+          "name": "splncs04.bst",
+          "action": "replace",
+          "versionFrom": "comment-scan",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/llncs/splncs04.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/llncs/splncs04.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/llncs/splncs04.bst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "elsarticle",
+      "name": "Elsevier Article (elsarticle)",
+      "usedBy": [
+        "Elsevier journals"
+      ],
+      "homepage": "https://ctan.org/pkg/elsarticle",
+      "detect": {
+        "documentclass": [
+          "elsarticle"
+        ],
+        "files": [
+          "elsarticle.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "elsarticle"
+        }
+      },
+      "files": [
+        {
+          "name": "elsarticle.cls",
+          "action": "report-only",
+          "versionFrom": "provides",
+          "reason": "elsarticle is published on CTAN as elsarticle.dtx only; no compiled .cls is distributed anywhere, so it cannot be fetched and replaced safely.",
+          "recommendation": "unbundle",
+          "recommendationText": "Overleaf's TeX Live already carries a current elsarticle. Deleting the project-local elsarticle.cls lets that system copy take over, which is usually the fastest way to get the newer class.",
+          "versionTracksPackage": true
+        }
+      ]
+    }
+  ],
+  "genericRules": {
+    "note": "Applied to any .cls/.sty/.bst the templates above do not claim. Reported to the user so nothing goes unnoticed, but never modified.",
+    "ctanLookupByProvidesName": true
+  }
+}

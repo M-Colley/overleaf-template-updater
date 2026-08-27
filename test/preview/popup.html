@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Popup preview</title>
+<style>
+  body { margin:0; padding:24px; background:#eef1f4; font-family:-apple-system,"Segoe UI",Roboto,sans-serif; }
+  h2 { font-size:13px; color:#5a6470; margin:20px 0 8px; font-weight:600; }
+  .frames { display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start; }
+  .shell { background:#fff; border:1px solid #d5d9de; border-radius:10px; overflow:hidden;
+           box-shadow:0 3px 12px rgba(0,0,0,.10); }
+  iframe { width:348px; height:230px; border:0; display:block; }
+  @media (prefers-color-scheme: dark) { body{background:#1a1b1c} .shell{background:#222;border-color:#3a3a3a} h2{color:#9aa4b0} }
+</style>
+</head>
+<body>
+<h2>Popup states (real popup.html + popup.js, chrome.* stubbed)</h2>
+<div class="frames" id="frames"></div>
+
+<script>
+/* Each frame boots the real popup with a different fake tab, so every branch of
+   popup.js is rendered exactly as Chrome would show it. */
+const SCENARIOS = [
+  { label: 'active on a project (de.overleaf.com)',
+    url: 'https://de.overleaf.com/project/61a8757b541901373460174a',
+    pong: { ok: true, projectId: '61a8757b541901373460174a', mounted: true } },
+  { label: 'on Overleaf, no project open',
+    url: 'https://www.overleaf.com/project',
+    pong: { ok: true, projectId: null, mounted: false } },
+  { label: 'tab predates loading the extension',
+    url: 'https://www.overleaf.com/project/61a8757b541901373460174a',
+    pong: null, granted: true },
+  { label: 'self-hosted instance, not yet enabled',
+    url: 'https://overleaf.uni-ulm.de/project/61a8757b541901373460174a',
+    pong: null, granted: false },
+];
+
+function stubFor(s) {
+  return `<script>
+    window.chrome = {
+      tabs: {
+        query: async () => [{ id: 1, url: ${JSON.stringify(s.url)} }],
+        sendMessage: async () => {
+          const pong = ${JSON.stringify(s.pong)};
+          if (!pong) throw new Error('no receiver');
+          return pong;
+        },
+        reload: async () => {},
+      },
+      permissions: { contains: async () => ${!!s.granted}, request: async () => true },
+      runtime: { sendMessage: async () => ({ ok: true }) },
+    };
+  <\/script>`;
+}
+
+(async () => {
+  // Load the real popup markup, then splice the chrome stub in ahead of
+  // popup.js so the production files need no test-only hooks.
+  const html = await (await fetch('../../extension/popup/popup.html')).text();
+
+  for (const s of SCENARIOS) {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `<h2>${s.label}</h2><div class="shell"><iframe></iframe></div>`;
+    document.getElementById('frames').appendChild(wrap);
+
+    // srcdoc resolves relative URLs against THIS page, so repoint both assets.
+    wrap.querySelector('iframe').srcdoc = html
+      .replace('href="../styles/base.css"', 'href="../../extension/styles/base.css"')
+      .replace(
+        '<script src="popup.js"><\/script>',
+        stubFor(s) + '<script src="../../extension/popup/popup.js"><\/script>'
+      );
+  }
+})();
+</script>
+</body>
+</html>

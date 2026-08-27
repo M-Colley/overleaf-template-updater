@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Panel preview</title>
+<link rel="stylesheet" href="../../extension/content/panel.css">
+<style>
+  body { margin:0; font-family:-apple-system,"Segoe UI",Roboto,sans-serif; background:#eef1f4; height:100vh; }
+  .fake-editor { padding:40px; color:#8a94a0; }
+  .fake-editor h1 { font-size:16px; }
+</style>
+</head>
+<body>
+<div class="fake-editor"><h1>(stand-in for the Overleaf editor)</h1>
+<p>The panel is rendered from real ui.js + panel.css with mock plan data.</p></div>
+
+<script>
+// --- stub the browser-extension surfaces ui.js expects -------------------
+window.chrome = { storage: { sync: {
+  get: () => Promise.resolve({ backupDefault: true }),
+  set: () => Promise.resolve(),
+}}};
+var OTU = {};
+</script>
+<script src="../../extension/lib/util.js"></script>
+<script src="../../extension/lib/diff.js"></script>
+<script src="../../extension/content/ui.js"></script>
+<script>
+OTU.content = { onOpen(){}, rescan(){}, applySelected(){} };
+
+const OLD_CLS = `\\ProvidesClass{acmart}[2020/04/30 v1.71 Typesetting articles for the ACM]
+\\LoadClass{article}
+\\newcommand{\\acmDOI}[1]{\\def\\@acmDOI{#1}}
+\\RequirePackage{graphicx}
+\\def\\@copyrightmode{acmcopyright}`;
+const NEW_CLS = `\\ProvidesClass{acmart}[2026/08/16 v2.20 Typesetting articles for the ACM]
+\\LoadClass{article}
+\\newcommand{\\acmDOI}[1]{\\def\\@acmDOI{#1}}
+\\newcommand{\\acmISBN}[1]{\\def\\@acmISBN{#1}}
+\\RequirePackage{graphicx}
+\\RequirePackage{hyperref}
+\\def\\@copyrightmode{acmlicensed}`;
+
+const plan = {
+  templates: [{ id:'acmart', name:'ACM Primary Article Template (acmart)' }],
+  classNames: ['acmart'],
+  files: new Array(37),
+  warnings: [
+    'Mismatch: your ACM-Reference-Format.bst was built for acmart v2.19, but your acmart.cls is v1.71. Bibliography formatting may not match the class.'
+  ],
+  unclaimed: [{ path: 'styles/mylab.sty' }],
+  items: [
+    { name:'acmart.cls', action:'replace', present:true, projectPath:'acmart.cls',
+      local:{version:'1.71', date:'2020-04-30'}, upstream:{version:'2.20', date:'2026-08-16'},
+      status:'outdated', statusReason:'local v1.71 vs upstream v2.20',
+      applicable:true, selected:true, localText:OLD_CLS, newText:NEW_CLS,
+      sizeNote:'~15 MB, downloaded once per browser session and cached', fromCache:false,
+      recommendationText:"Overleaf's own TeX Live also provides acmart. If you would rather not carry a copy at all, deleting the project-local acmart.cls makes Overleaf use its system version - which is another valid way to stay current." },
+    { name:'ACM-Reference-Format.bst', action:'replace', present:true, projectPath:'ACM-Reference-Format.bst',
+      local:{version:'2.2'}, upstream:{version:'2.2'}, status:'current', fromCache:'ttl', newText:'x', localText:'x',
+      statusReason:'Byte-identical to upstream.', applicable:false, selected:false },
+    { name:'acmnumeric.bbx', action:'replace', present:true, projectPath:'acmnumeric.bbx',
+      local:{version:'0.1', date:'2017-09-27'}, upstream:{version:'0.1', date:'2017-09-27'},
+      status:'modified', statusReason:'Same version as upstream, but the file content differs - it looks locally patched.',
+      applicable:true, selected:false, localText:'a\nb\n', newText:'a\nB\n' },
+    { name:'acmauthoryear.cbx', action:'replace', present:false, projectPath:null,
+      local:null, upstream:{version:'0.1'}, status:'absent',
+      statusReason:"Not bundled in this project - Overleaf's own TeX Live supplies it.",
+      applicable:false, selected:false },
+    { name:'elsarticle.cls', action:'report-only', present:true, projectPath:'elsarticle.cls',
+      local:{version:'3.2'}, upstream:{version:'3.5', date:'2026-01-09'},
+      status:'outdated', statusReason:'local v3.2 vs upstream v3.5',
+      applicable:true, selected:true, recommendation:'unbundle',
+      reason:'elsarticle is published on CTAN as elsarticle.dtx only; no compiled .cls is distributed anywhere, so it cannot be fetched and replaced safely.',
+      recommendationText:"Overleaf's TeX Live already carries a current elsarticle. Deleting the project-local elsarticle.cls lets that system copy take over." },
+  ],
+};
+
+OTU.ui.mount();
+document.getElementById('otu-root').hidden = false;
+document.getElementById('otu-launch').hidden = true;
+OTU.ui.subtitle('acmart');
+OTU.ui.renderPlan(plan);
+// open the first diff so the preview shows it
+setTimeout(() => document.querySelector('[data-role=diff]')?.click(), 60);
+</script>
+</body>
+</html>
