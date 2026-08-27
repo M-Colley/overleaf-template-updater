@@ -177,6 +177,31 @@ tool could do. So raw sources carry **explicit mirror fallbacks**, and every
 downloaded class is checked with `expectName` — its `\ProvidesClass` name must
 match what was requested — before it can ever be offered as an update.
 
+### Nothing hidden
+
+The options page exists so the privacy claim is *checkable* rather than something
+to take on trust: every cached file with its version and size, every template
+tracked and the exact URL each one comes from, a one-click reachability test, and
+the complete list of hosts the extension may contact.
+
+That host list is **rendered from the allowlist `background.js` actually
+enforces**, not restated in the page — a hardcoded copy had already gone stale
+the moment CTAN mirror fallbacks were added, and a stale trust claim is worse
+than none. A test now fails if `options.html` hardcodes a hostname, or if the
+registry points anywhere the allowlist doesn't cover.
+
+<details>
+<summary><b>Screenshot of the options page</b></summary>
+<br>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/options-dark.png">
+    <img src="docs/img/options.png" width="760"
+         alt="The options page. Behaviour toggles for downloading a backup and closing the panel after a successful update. A cached-files table listing eight files with versions, sizes and fetch times totalling 534 KB, with a Clear cache button. A tracked-templates table listing every file for acmart, IEEEtran, llncs and elsarticle with its handling and source URL. An upstream connectivity check showing every source reachable. A network scope section listing the nine hosts the extension may contact.">
+  </picture>
+</p>
+</details>
+
 ---
 
 ## The `otu` CLI
@@ -309,7 +334,15 @@ chrome --headless=new --force-device-scale-factor=2 --window-size=1280,840 --scr
 chrome --headless=new --force-device-scale-factor=2 --window-size=860,392 --screenshot=docs/img/popup.png http://localhost:8731/test/preview/screenshot-popup.html
 ```
 
-Append `?theme=dark` to either for the dark variant. It lifts the real
+```bash
+chrome --headless=new --force-device-scale-factor=1.5 --window-size=880,2422 --screenshot=docs/img/options.png http://localhost:8731/test/preview/screenshot-options.html
+```
+
+The options page reports its own content height in `document.title`, so
+`chrome --headless --dump-dom` gives you the exact window height to pass rather
+than guessing at it.
+
+Append `?theme=dark` to any of them for the dark variant. It lifts the real
 `@media (prefers-color-scheme: dark)` rules out of the stylesheet at runtime
 rather than restating any colours, so the dark screenshots follow the palette
 automatically.

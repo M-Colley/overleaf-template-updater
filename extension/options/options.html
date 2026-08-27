@@ -95,13 +95,11 @@
   <section>
     <h2>Network scope</h2>
     <p class="sub" style="margin-bottom:0">
-      The extension only ever fetches from <code>ctan.org</code>,
-      <code>mirror.ctan.org</code>, <code>mirrors.ctan.org</code>,
-      <code>portalparts.acm.org</code>, <code>raw.githubusercontent.com</code> and
-      <code>api.github.com</code>. That allowlist is enforced in
-      <code>background.js</code>, not in the registry, so editing the registry
-      cannot widen it. No analytics, no telemetry, no servers of ours.
+      The extension only ever fetches from the hosts below. That allowlist is
+      enforced in <code>background.js</code>, not in the registry, so editing the
+      registry cannot widen it. No analytics, no telemetry, no servers of ours.
     </p>
+    <p id="hosts" class="sub" style="margin:10px 0 0"></p>
   </section>
 
   <script src="options.js"></script>

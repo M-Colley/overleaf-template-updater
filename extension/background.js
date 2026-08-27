@@ -363,6 +363,9 @@ const handlers = {
   backupProject: ({ projectId, filename }, sender) =>
     backupProject(projectId, filename, sender).then((downloadId) => ({ downloadId })),
   registerSite: ({ origin }) => registerSite(origin),
+  // The options page renders this rather than restating it, so the list a user
+  // is shown is always the list actually enforced above.
+  allowedHosts: () => ({ hosts: [...ALLOWED_HOSTS].sort() }),
   cacheStats: () => OTU.cache.stats(),
   cacheClear: () => OTU.cache.clear().then((removed) => ({ removed })),
 };

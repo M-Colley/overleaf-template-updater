@@ -325,6 +325,38 @@ function buildProjectZip() {
       { origin: 'http://evil.example.com' }, res));
   check('refused for a non-https caller', insecure.ok, false);
 
+  // The options page's "Network scope" section is a trust claim, so it must be
+  // rendered from the enforced allowlist rather than restating it. A hardcoded
+  // copy silently went stale the moment CTAN mirror fallbacks were added.
+  console.log('\nthe options page cannot misstate the allowlist');
+  const exposed = await new Promise((res) =>
+    worker.__listener({ type: 'allowedHosts' }, {}, res));
+  ok('allowedHosts returns the enforced list',
+    Array.isArray(exposed.hosts) && exposed.hosts.length >= 5,
+    JSON.stringify(exposed.hosts));
+
+  // Every host the registry actually points at must be on the allowlist.
+  // Adding CTAN mirror fallbacks without allowlisting them would fail here.
+  const registryHosts = new Set();
+  for (const t of registry.templates) {
+    for (const f of t.files) {
+      const shared = f.source && f.source.ref ? registry.sources[f.source.ref] : null;
+      const url = (f.source && f.source.url) || (shared && shared.url);
+      if (url) registryHosts.add(new URL(url).hostname);
+      for (const m of (f.source && f.source.mirrors) || []) {
+        registryHosts.add(new URL(m).hostname);
+      }
+    }
+  }
+  const unlisted = [...registryHosts].filter((h) => !exposed.hosts.includes(h));
+  ok('every host the registry points at is on the allowlist',
+    unlisted.length === 0, 'not allowlisted: ' + unlisted.join(', '));
+
+  const optionsHtml = fs.readFileSync(path.join(EXT, 'options', 'options.html'), 'utf8');
+  ok('options.html hardcodes no hostnames of its own',
+    !/ctan\.org|githubusercontent|portalparts/.test(optionsHtml),
+    'a hardcoded list would drift from background.js');
+
   console.log('\nmanifest covers the hosts Overleaf actually uses');
   const manifest = JSON.parse(
     fs.readFileSync(path.join(EXT, 'manifest.json'), 'utf8'));

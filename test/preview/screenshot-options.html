@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Options screenshot</title>
+<style>
+  html, body { margin: 0; }
+  body { background: #f2f4f5; }
+  body.dark { background: #0e1113; }
+  iframe { width: 100%; border: 0; display: block; }
+</style>
+</head>
+<body>
+<iframe id="f" scrolling="no"></iframe>
+
+<script>
+/* Renders the real options.html + options.js + base.css against stubbed
+   chrome.* APIs. The tracked-templates table is populated from the actual
+   registry file, so the sources shown are the real ones.
+   The page reports its own height in document.title so the capture script can
+   size the window exactly. */
+const DARK = new URLSearchParams(location.search).get('theme') === 'dark';
+if (DARK) document.body.classList.add('dark');
+
+const MIN = 60 * 1000;
+const CACHE = {
+  ok: true,
+  count: 8,
+  totalBytes: 546415,
+  entries: [
+    { name: 'ACM-Reference-Format.bst', bytes: 94292,  version: '2.2',  fetchedAt: Date.now() - 14 * MIN },
+    { name: 'IEEEtran.cls',             bytes: 281957, version: '1.8b', fetchedAt: Date.now() - 3 * 24 * 60 * MIN },
+    { name: 'acmart.cls',               bytes: 121874, version: '2.20', fetchedAt: Date.now() - 14 * MIN },
+    { name: 'acmauthoryear.bbx',        bytes: 20872,  version: '0.1',  fetchedAt: Date.now() - 14 * MIN },
+    { name: 'acmauthoryear.cbx',        bytes: 6245,   version: '0.1',  fetchedAt: Date.now() - 14 * MIN },
+    { name: 'acmdatamodel.dbx',         bytes: 1093,   version: null,   fetchedAt: Date.now() - 14 * MIN },
+    { name: 'acmnumeric.bbx',           bytes: 19992,  version: '0.1',  fetchedAt: Date.now() - 14 * MIN },
+    { name: 'acmnumeric.cbx',           bytes: 90,     version: '0.1',  fetchedAt: Date.now() - 14 * MIN },
+  ],
+};
+
+const CTAN = {
+  acmart:     { version: { number: '2.20', date: '2026-08-16' } },
+  llncs:      { version: { number: '2.26', date: '2025-02-25' } },
+  elsarticle: { version: { number: '3.5',  date: '2026-01-09' } },
+};
+const SIZES = {
+  'acmart.cls': 121874, 'ACM-Reference-Format.bst': 94292,
+  'acmauthoryear.bbx': 20872, 'acmauthoryear.cbx': 6245,
+  'acmnumeric.bbx': 19992, 'acmnumeric.cbx': 90, 'acmdatamodel.dbx': 1093,
+  'IEEEtran.cls': 281957, 'IEEEtran.bst': 27564,
+  'llncs.cls': 43405, 'splncs04.bst': 5327,
+};
+
+function stub() {
+  return `<script>
+  const CACHE = ${JSON.stringify(CACHE)};
+  const CTAN = ${JSON.stringify(CTAN)};
+  const SIZES = ${JSON.stringify(SIZES)};
+  window.chrome = {
+    runtime: {
+      lastError: null,
+      getURL: (p) => '../../extension/' + p,
+      sendMessage: (msg, cb) => {
+        if (msg.type === 'cacheStats') return cb(CACHE);
+        if (msg.type === 'allowedHosts') return cb({ ok: true, hosts: [
+          'api.github.com','ctan.math.illinois.edu','ctan.org','ftp.fau.de',
+          'mirror.ctan.org','mirrors.ctan.org','portalparts.acm.org',
+          'raw.githubusercontent.com','www.ctan.org' ] });
+        if (msg.type === 'ctanPackage') return cb({ ok: true, ...(CTAN[msg.pkg] || { version: null }) });
+        const name = (msg.member || msg.url || '').split('/').pop();
+        const bytes = SIZES[name] || 4096;
+        cb({ ok: true, text: 'x'.repeat(bytes), cached: msg.url && msg.url.includes('acm') ? 'version' : false });
+      },
+    },
+    storage: { sync: {
+      get: async () => ({ backupDefault: true, autoClose: true }),
+      set: async () => {},
+    }},
+  };
+<\/script>`;
+}
+
+const DARK_LIFT = `<script>
+  addEventListener('load', () => {
+    const out = [];
+    for (const sheet of document.styleSheets) {
+      let rules; try { rules = sheet.cssRules; } catch { continue; }
+      for (const rule of rules) {
+        if (rule.type === CSSRule.MEDIA_RULE &&
+            /prefers-color-scheme:\\s*dark/.test(rule.conditionText)) {
+          for (const inner of rule.cssRules) out.push(inner.cssText);
+        }
+      }
+    }
+    const s = document.createElement('style');
+    s.textContent = out.join(String.fromCharCode(10));
+    document.head.appendChild(s);
+  });
+<\/script>`;
+
+(async () => {
+  const html = await (await fetch('../../extension/options/options.html')).text();
+  const frame = document.getElementById('f');
+
+  frame.srcdoc = html
+    .replace('href="../styles/base.css"', 'href="../../extension/styles/base.css"')
+    .replace(
+      '<script src="options.js"><\/script>',
+      stub() + (DARK ? DARK_LIFT : '') +
+      '<script src="../../extension/options/options.js"><\/script>'
+    );
+
+  frame.addEventListener('load', () => {
+    const d = frame.contentDocument;
+    // Run the connectivity check so the section shows real output rather than
+    // an untouched button.
+    setTimeout(() => d.getElementById('test').click(), 200);
+    setTimeout(() => {
+      frame.style.height = d.documentElement.scrollHeight + 'px';
+      document.title = 'H:' + Math.ceil(d.documentElement.scrollHeight);
+      document.documentElement.setAttribute('data-ready', '1');
+    }, 1200);
+  });
+})();
+</script>
+</body>
+</html>

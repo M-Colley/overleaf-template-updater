@@ -180,6 +180,16 @@ document.getElementById('clearCache').addEventListener('click', async () => {
   }
 });
 
+async function renderHosts() {
+  const el = document.getElementById('hosts');
+  try {
+    const { hosts } = await bg('allowedHosts');
+    el.innerHTML = hosts.map((h) => `<code>${esc(h)}</code>`).join(' ');
+  } catch (err) {
+    el.innerHTML = `<span class="bad-text">Could not read the allowlist: ${esc(err.message)}</span>`;
+  }
+}
+
 document.getElementById('test').addEventListener('click', testSources);
 
 loadRegistry().catch((e) => {
@@ -188,3 +198,4 @@ loadRegistry().catch((e) => {
 });
 initSettings();
 renderCache();
+renderHosts();
