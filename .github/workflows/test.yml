@@ -1,0 +1,46 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # The suite fetches every registry source from its live upstream and checks
+  # versions against CTAN, so a weekly run catches a moved URL or a new release
+  # before a user's scan does.
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: npm test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor in package.json's engines -- DecompressionStream accepts
+        # 'deflate-raw' from 20.12 -- and the current LTS.
+        node: ['20.12.0', '24']
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+
+      # test/fixtures.js shells out to `python`, to unpack TeX Live's .tar.xz
+      # archives and to build zips with an independent implementation, and to
+      # `curl`, which the runner already has.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+
+      - run: npm test

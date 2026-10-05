@@ -11,6 +11,6 @@
     "venue-shift": "node cli/venue-shift.mjs"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.12"
   }
 }
