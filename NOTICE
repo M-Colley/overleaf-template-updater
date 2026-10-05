@@ -17,7 +17,8 @@ above does not apply to them. Each remains under its own terms:
       Copyright ACM / Boris Veytsman. LaTeX Project Public License (LPPL).
       Fetched from https://www.acm.org/publications/proceedings-template
 
-  IEEEtran.cls, IEEEtran.bst
+  IEEEtran.cls, IEEEtran.bst, IEEEtranS.bst, IEEEtranN.bst, IEEEtranSA.bst,
+  IEEEtranSN.bst
       Copyright Michael Shell. LaTeX Project Public License (LPPL).
       Fetched from CTAN.
 
@@ -25,9 +26,54 @@ above does not apply to them. Each remains under its own terms:
       Copyright Springer-Verlag. Distributed under Springer's own terms.
       Fetched from CTAN.
 
-  elsarticle
+  elsarticle.cls
       Copyright Elsevier. Detected and reported only; never downloaded or
       modified by this tool.
+
+  elsarticle-num.bst, elsarticle-harv.bst, elsarticle-num-names.bst
+      Copyright Elsevier. LaTeX Project Public License (LPPL). Fetched from CTAN.
+
+  cas-sc.cls, cas-dc.cls, cas-common.sty, cas-model2-names.bst
+      Copyright Elsevier. LPPL. Fetched from CTAN (els-cas-templates).
+
+  lipics-v2021.cls, oasics-v2021.cls
+      Copyright Schloss Dagstuhl. LPPL. Fetched from
+      https://github.com/dagstuhl-publishing/styles
+
+  ceurart.cls
+      Copyright Dmitry S. Kulyabov. LPPL. Fetched from
+      https://github.com/yamadharma/ceurart
+
+  acl.sty, acl_natbib.bst
+      Association for Computational Linguistics. No licence is declared in
+      the repository. Fetched from https://github.com/acl-org/acl-style-files
+
+  cvpr.sty, ieeenat_fullname.bst
+      IEEE/CVF CVPR. No licence is declared in the repository. Fetched from
+      https://github.com/cvpr-org/author-kit
+
+  tmlr.sty, tmlr.bst
+      Transactions on Machine Learning Research. Apache License 2.0 (as
+      declared by the repository). Fetched from
+      https://github.com/JmlrOrg/tmlr-style-file
+
+  mnras.cls, mnras.bst
+      Copyright Royal Astronomical Society. LPPL. Fetched from CTAN.
+
+  aastex701.cls, aasjournalv7.bst
+      Copyright American Astronomical Society. LPPL. Fetched from CTAN.
+
+  oup-authoring-template.cls, oup-plain.bst, oup-abbrvnat.bst
+      Copyright Oxford University Press. LPPL. Fetched from CTAN.
+
+  asmeconf.cls, asmeconf.bst, asmejour.cls, asmejour.bst
+      Copyright John H. Lienhard V. MIT License. Fetched from CTAN.
+
+  jacow.cls, quantumarticle.cls, quantum.bst, iacrj.cls
+      Copyright their respective authors. LPPL. Fetched from CTAN.
+
+  revtex4-2.cls, apa7.cls, achemso.cls, jmlr.cls, lni.cls, aastex63*.cls
+      Detected and reported only; never downloaded or modified by this tool.
 
 The test suite likewise fetches these files on demand into a gitignored
 directory rather than vendoring them (see test/fixtures.js).

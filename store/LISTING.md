@@ -54,10 +54,10 @@ gracefully — it just stops offering the *Enable on…* button.
 Template Updater for Overleaf
 ```
 
-**Short description** (123/132 — this is the `description` in the manifest)
+**Short description** (125/132 — this is the `description` in the manifest)
 
 ```
-Checks your Overleaf project's LaTeX template (acmart, IEEEtran, llncs) against the latest release and updates it in place.
+Checks your Overleaf project's LaTeX template (ACM, IEEE, Springer, Elsevier, ACL, CVPR, LIPIcs and more) for newer releases.
 ```
 
 **Category:** Workflow & Planning
@@ -79,12 +79,19 @@ upstream release, and shows you a line-by-line diff of exactly what would change
 Nothing is written until you tick the files you want and press Apply.
 
 WHAT IT UPDATES
-- acmart.cls, ACM-Reference-Format.bst and the acm biblatex files (CHI, CSCW,
-  UIST, AutomotiveUI, IMWUT, ACM journals)
-- IEEEtran.cls and IEEEtran.bst
-- llncs.cls and splncs04.bst (Springer LNCS)
-- elsarticle is detected and reported (Elsevier publishes no compiled class file,
-  so it tells you rather than guessing)
+- ACM: acmart.cls, ACM-Reference-Format.bst and the acm biblatex files (CHI,
+  CSCW, UIST, AutomotiveUI, IMWUT, ACM journals)
+- IEEE: IEEEtran.cls and its bibliography styles
+- Springer LNCS: llncs.cls and splncs04.bst
+- Elsevier: the CAS templates (cas-sc, cas-dc) and the elsarticle bibliography
+  styles
+- ACL, EMNLP and NAACL (acl.sty); CVPR (cvpr.sty); TMLR (tmlr.sty)
+- LIPIcs and OASIcs (ICALP, STACS, SoCG, ...); CEUR-WS workshop proceedings
+- MNRAS, AAS journals (AASTeX), Oxford University Press, ASME, JACoW, Quantum,
+  IACR journals
+- Detected and reported, never guessed at: elsarticle.cls, REVTeX, APA 7,
+  achemso, JMLR/PMLR and GI LNI (their publishers ship no compiled class file),
+  and AASTeX 6, which AASTeX 7 replaced under a new name
 
 WHAT IT WILL NOT TOUCH
 It only ever writes class, style and bibliography-style files. It never rewrites
@@ -132,9 +139,9 @@ the reviewer will ask about.
 | `downloads` | Downloads a .zip backup of the user's own Overleaf project before any file is modified, so a change can always be undone. The file comes from the Overleaf origin the user is already signed in to. |
 | `scripting` | Registers the content script on a self-hosted Overleaf instance after the user has explicitly granted permission for that specific domain via the extension's popup. Not used otherwise. |
 | Host permission: `*.overleaf.com` | The extension's entire function is reading and updating files in an Overleaf project. It needs to run on the project page to use the session the user is already signed in with. |
-| Host permission: `ctan.org`, `mirror(s).ctan.org` | Fetches the current version number and the published class and bibliography-style files (IEEEtran, llncs) from CTAN, the canonical LaTeX package archive. |
+| Host permission: `ctan.org`, `mirror(s).ctan.org` | Fetches the current version number and the published class and bibliography-style files (IEEEtran, llncs, Elsevier, MNRAS, AASTeX and others) from CTAN, the canonical LaTeX package archive. |
 | Host permission: `portalparts.acm.org` | Downloads ACM's official proceedings template archive. This is the only place a compiled acmart.cls is published; CTAN and GitHub carry only the .dtx source, which cannot be used without running LaTeX. |
-| Host permission: `raw.githubusercontent.com`, `api.github.com` | Fetches template files and release version information for templates that publish on GitHub. |
+| Host permission: `raw.githubusercontent.com`, `api.github.com` | Fetches template files for templates whose publishers maintain them on GitHub rather than CTAN (ACL, CVPR, TMLR, LIPIcs, CEUR-WS). |
 | `optional_host_permissions: https://*/*` | Universities commonly run their own Overleaf Server Pro instance on their own domain, which cannot be predicted in advance. Nothing is granted until the user explicitly clicks "Enable on <host>" for one specific domain in the popup. No broad access is requested or held by default. |
 
 **Single purpose statement**

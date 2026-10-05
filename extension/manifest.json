@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Template Updater for Overleaf",
   "version": "0.1.0",
-  "description": "Checks your Overleaf project's LaTeX template (acmart, IEEEtran, llncs) against the latest release and updates it in place.",
+  "description": "Checks your Overleaf project's LaTeX template (ACM, IEEE, Springer, Elsevier, ACL, CVPR, LIPIcs and more) for newer releases.",
   "permissions": [
     "storage",
     "downloads",
