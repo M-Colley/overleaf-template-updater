@@ -142,16 +142,27 @@ async function testSources() {
     }
   }
 
+  // One line per source is too many to read for the one thing that matters --
+  // did anything fail? -- so failures lead and the full log sits behind a click.
   const lines = [];
+  const failed = [];
   for (const job of jobs) {
+    out.innerHTML = `<div class="muted">Testing… ${lines.length + 1} of ${jobs.length}</div>`;
     try {
       const detail = await job.run();
       lines.push(`<div class="ok-text">✓ ${esc(job.label)} — ${esc(detail)}</div>`);
     } catch (err) {
-      lines.push(`<div class="bad-text">✗ ${esc(job.label)} — ${esc(err.message)}</div>`);
+      const line = `<div class="bad-text">✗ ${esc(job.label)} — ${esc(err.message)}</div>`;
+      lines.push(line);
+      failed.push(line);
     }
-    out.innerHTML = lines.join('');
   }
+  out.innerHTML =
+    (failed.length
+      ? `<div class="bad-text"><strong>${failed.length} of ${jobs.length} checks failed</strong></div>` +
+        failed.join('')
+      : `<div class="ok-text"><strong>All ${jobs.length} checks passed</strong></div>`) +
+    `<details><summary>Every check</summary>${lines.join('')}</details>`;
   btn.disabled = false;
   renderCache();
 }

@@ -1,0 +1,293 @@
+{
+  "capturedAt": "2026-10-05T06:03:15.135Z",
+  "ctan": {
+    "acmart": {
+      "version": {
+        "number": "2.20",
+        "date": "2026-08-16"
+      }
+    },
+    "llncs": {
+      "version": {
+        "number": "2.26",
+        "date": "2025-02-25"
+      }
+    },
+    "elsarticle": {
+      "version": {
+        "number": "3.5",
+        "date": "2026-01-09"
+      }
+    },
+    "els-cas-templates": {
+      "version": {
+        "number": "2.4",
+        "date": "2024-05-04"
+      }
+    },
+    "mnras": {
+      "version": {
+        "number": "3.2",
+        "date": "2023-07-20"
+      }
+    },
+    "aastex": {
+      "version": {
+        "number": "7.0.1",
+        "date": "2025-05-09"
+      }
+    },
+    "oup-authoring-template": {
+      "version": {
+        "number": "1.5",
+        "date": "2026-07-14"
+      }
+    },
+    "asmeconf": {
+      "version": {
+        "number": "1.46",
+        "date": "2026-01-10"
+      }
+    },
+    "asmejour": {
+      "version": {
+        "number": "1.27",
+        "date": "2025-11-30"
+      }
+    },
+    "jacow": {
+      "version": {
+        "number": "2.7",
+        "date": "2022-02-02"
+      }
+    },
+    "quantumarticle": {
+      "version": {
+        "number": "6.1",
+        "date": ""
+      }
+    },
+    "iacrj": {
+      "version": {
+        "number": "0.9.4",
+        "date": "2026-07-15"
+      }
+    },
+    "revtex": {
+      "version": {
+        "number": "4.2f",
+        "date": ""
+      }
+    },
+    "apa7": {
+      "version": {
+        "number": "2.16",
+        "date": "2022-07-25"
+      }
+    },
+    "achemso": {
+      "version": {
+        "number": "3.14",
+        "date": "2025-09-22"
+      }
+    },
+    "jmlr": {
+      "version": {
+        "number": "1.30",
+        "date": "2022-02-09"
+      }
+    },
+    "lni": {
+      "version": {
+        "number": "2.0",
+        "date": "2025-02-05"
+      }
+    }
+  },
+  "files": {
+    "acmart.cls": {
+      "bytes": 121866,
+      "version": "2.20"
+    },
+    "ACM-Reference-Format.bst": {
+      "bytes": 94292,
+      "version": "2.2"
+    },
+    "acmauthoryear.bbx": {
+      "bytes": 20872,
+      "version": "0.1"
+    },
+    "acmauthoryear.cbx": {
+      "bytes": 6245,
+      "version": "0.1"
+    },
+    "acmnumeric.bbx": {
+      "bytes": 19992,
+      "version": "0.1"
+    },
+    "acmnumeric.cbx": {
+      "bytes": 90,
+      "version": "0.1"
+    },
+    "acmdatamodel.dbx": {
+      "bytes": 1093,
+      "version": null
+    },
+    "IEEEtran.cls": {
+      "bytes": 281957,
+      "version": "1.8b"
+    },
+    "IEEEtran.bst": {
+      "bytes": 57748,
+      "version": "1.14"
+    },
+    "IEEEtranS.bst": {
+      "bytes": 61730,
+      "version": "1.14"
+    },
+    "IEEEtranN.bst": {
+      "bytes": 63583,
+      "version": "1.14"
+    },
+    "IEEEtranSA.bst": {
+      "bytes": 65863,
+      "version": "1.14"
+    },
+    "IEEEtranSN.bst": {
+      "bytes": 66951,
+      "version": "1.14"
+    },
+    "llncs.cls": {
+      "bytes": 43405,
+      "version": "2.26"
+    },
+    "splncs04.bst": {
+      "bytes": 32146,
+      "version": null
+    },
+    "elsarticle-num.bst": {
+      "bytes": 29462,
+      "version": "2.1"
+    },
+    "elsarticle-harv.bst": {
+      "bytes": 30002,
+      "version": "2.1"
+    },
+    "elsarticle-num-names.bst": {
+      "bytes": 28896,
+      "version": "2.1"
+    },
+    "cas-sc.cls": {
+      "bytes": 4410,
+      "version": "2.4"
+    },
+    "cas-dc.cls": {
+      "bytes": 4395,
+      "version": "2.4"
+    },
+    "cas-common.sty": {
+      "bytes": 76688,
+      "version": "2.4"
+    },
+    "cas-model2-names.bst": {
+      "bytes": 31802,
+      "version": "2.4"
+    },
+    "lipics-v2021.cls": {
+      "bytes": 48380,
+      "version": "3.1.3"
+    },
+    "oasics-v2021.cls": {
+      "bytes": 48364,
+      "version": "3.1.3"
+    },
+    "ceurart.cls": {
+      "bytes": 83115,
+      "version": "0.6.2"
+    },
+    "acl.sty": {
+      "bytes": 11615,
+      "version": null
+    },
+    "acl_natbib.bst": {
+      "bytes": 45440,
+      "version": null
+    },
+    "cvpr.sty": {
+      "bytes": 17969,
+      "version": null
+    },
+    "ieeenat_fullname.bst": {
+      "bytes": 26900,
+      "version": null
+    },
+    "tmlr.sty": {
+      "bytes": 6556,
+      "version": null
+    },
+    "tmlr.bst": {
+      "bytes": 26968,
+      "version": null
+    },
+    "mnras.cls": {
+      "bytes": 62657,
+      "version": "3.2"
+    },
+    "mnras.bst": {
+      "bytes": 43376,
+      "version": null
+    },
+    "aastex701.cls": {
+      "bytes": 383761,
+      "version": "7.0.1"
+    },
+    "aasjournalv7.bst": {
+      "bytes": 38788,
+      "version": "1.19"
+    },
+    "oup-authoring-template.cls": {
+      "bytes": 147048,
+      "version": "1.5"
+    },
+    "oup-plain.bst": {
+      "bytes": 20621,
+      "version": null
+    },
+    "oup-abbrvnat.bst": {
+      "bytes": 26536,
+      "version": null
+    },
+    "asmeconf.cls": {
+      "bytes": 123543,
+      "version": "1.46"
+    },
+    "asmeconf.bst": {
+      "bytes": 38475,
+      "version": "1.17"
+    },
+    "asmejour.cls": {
+      "bytes": 74322,
+      "version": "1.27"
+    },
+    "asmejour.bst": {
+      "bytes": 43371,
+      "version": "1.10"
+    },
+    "jacow.cls": {
+      "bytes": 21530,
+      "version": "2.7"
+    },
+    "quantumarticle.cls": {
+      "bytes": 58246,
+      "version": "6.1"
+    },
+    "quantum.bst": {
+      "bytes": 45228,
+      "version": null
+    },
+    "iacrj.cls": {
+      "bytes": 28081,
+      "version": "0.9.4"
+    }
+  }
+}

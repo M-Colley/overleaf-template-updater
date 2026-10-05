@@ -7,6 +7,11 @@
  * lookup and the version comparison are all genuinely exercised.
  *
  * Network is used (CTAN + ACM). Pass --offline to skip.
+ *
+ * Pass --snapshot to also record what every registry source returned -- size,
+ * the version read out of the file, CTAN's declared version -- into
+ * test/preview/options-snapshot.json, which the options-page screenshot
+ * renders instead of invented numbers.
  */
 
 const fs = require('fs');
@@ -17,6 +22,7 @@ const ROOT = path.join(__dirname, '..');
 const EXT = path.join(ROOT, 'extension');
 const FIX = path.join(__dirname, 'fixtures');
 const OFFLINE = process.argv.includes('--offline');
+const SNAPSHOT = process.argv.includes('--snapshot');
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -295,11 +301,15 @@ function buildProjectZip() {
     const call = (msg) => new Promise((res) => worker.__listener(msg, {}, res));
     const sourceFailures = [];
     const versionDrift = [];
+    const snapshot = { capturedAt: new Date().toISOString(), ctan: {}, files: {} };
     let fetched = 0;
 
     for (const t of registry.templates) {
       const declared = t.upstream && t.upstream.version && t.upstream.version.kind === 'ctan'
         ? await call({ type: 'ctanPackage', pkg: t.upstream.version.pkg }) : null;
+      if (declared && declared.ok) {
+        snapshot.ctan[t.upstream.version.pkg] = { version: declared.version || null };
+      }
 
       for (const f of t.files) {
         if (f.action !== 'replace') continue;
@@ -311,6 +321,7 @@ function buildProjectZip() {
               versionFrom: f.versionFrom, expectName: f.expectName });
         if (!res.ok) { sourceFailures.push(`${f.name}: ${res.error}`); continue; }
         fetched++;
+        snapshot.files[f.name] = { bytes: res.text.length, version: res.version || null };
 
         const want = declared && declared.ok && declared.version && declared.version.number;
         if (f.versionTracksPackage && want &&
@@ -323,6 +334,13 @@ function buildProjectZip() {
       sourceFailures.join('\n         '));
     ok('every class that tracks its CTAN package reads as CTAN\'s version',
       versionDrift.length === 0, versionDrift.join('\n         '));
+
+    // Only a complete, verified run is worth rendering.
+    if (SNAPSHOT && sourceFailures.length === 0) {
+      const out = path.join(__dirname, 'preview', 'options-snapshot.json');
+      fs.writeFileSync(out, JSON.stringify(snapshot, null, 2) + '\n');
+      console.log(`  wrote ${path.relative(ROOT, out)}`);
+    }
   }
 
   /* ---------------------------------------- the newer detection paths */

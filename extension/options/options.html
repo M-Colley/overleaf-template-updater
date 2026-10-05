@@ -30,10 +30,15 @@
     .toolbar { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
     #results { font-size: 12.5px; margin-top: 12px; }
     #results div { padding: 3px 0; font-variant-numeric: tabular-nums; }
+    #results details { margin-top: 6px; }
+    #results summary { cursor: pointer; color: var(--faint); padding: 3px 0; }
     .muted { color: var(--faint); }
     td.num { text-align: right; white-space: nowrap; }
     tfoot td { font-weight: 650; border-top: 1px solid var(--line); border-bottom: none; }
-    .src { font-size: 11px; color: var(--dim); }
+    /* A CTAN path has no break opportunities, and one long one pushed the whole
+       table out of its card; let the URL wrap instead of the tags and names. */
+    .src { font-size: 11px; color: var(--dim); overflow-wrap: anywhere; }
+    #registry .tag, #registry code { white-space: nowrap; }
     .usedby { font-size: 11px; color: var(--faint); display: block; margin-top: 2px; }
   </style>
 </head>

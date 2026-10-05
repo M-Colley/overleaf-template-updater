@@ -16,47 +16,39 @@
 <script>
 /* Renders the real options.html + options.js + base.css against stubbed
    chrome.* APIs. The tracked-templates table is populated from the actual
-   registry file, so the sources shown are the real ones.
+   registry file, so the sources shown are the real ones. Every size, file
+   version and CTAN version comes from options-snapshot.json, which
+   `node test/run-planner.js --snapshot` records from a live, verified fetch of
+   every registry source -- a file missing from it shows as a failure rather
+   than as an invented number.
    The page reports its own height in document.title so the capture script can
    size the window exactly. */
 const DARK = new URLSearchParams(location.search).get('theme') === 'dark';
 if (DARK) document.body.classList.add('dark');
 
 const MIN = 60 * 1000;
-const CACHE = {
-  ok: true,
-  count: 8,
-  totalBytes: 546415,
-  entries: [
-    { name: 'ACM-Reference-Format.bst', bytes: 94292,  version: '2.2',  fetchedAt: Date.now() - 14 * MIN },
-    { name: 'IEEEtran.cls',             bytes: 281957, version: '1.8b', fetchedAt: Date.now() - 3 * 24 * 60 * MIN },
-    { name: 'acmart.cls',               bytes: 121874, version: '2.20', fetchedAt: Date.now() - 14 * MIN },
-    { name: 'acmauthoryear.bbx',        bytes: 20872,  version: '0.1',  fetchedAt: Date.now() - 14 * MIN },
-    { name: 'acmauthoryear.cbx',        bytes: 6245,   version: '0.1',  fetchedAt: Date.now() - 14 * MIN },
-    { name: 'acmdatamodel.dbx',         bytes: 1093,   version: null,   fetchedAt: Date.now() - 14 * MIN },
-    { name: 'acmnumeric.bbx',           bytes: 19992,  version: '0.1',  fetchedAt: Date.now() - 14 * MIN },
-    { name: 'acmnumeric.cbx',           bytes: 90,     version: '0.1',  fetchedAt: Date.now() - 14 * MIN },
-  ],
-};
 
-const CTAN = {
-  acmart:     { version: { number: '2.20', date: '2026-08-16' } },
-  llncs:      { version: { number: '2.26', date: '2025-02-25' } },
-  elsarticle: { version: { number: '3.5',  date: '2026-01-09' } },
-};
-const SIZES = {
-  'acmart.cls': 121874, 'ACM-Reference-Format.bst': 94292,
-  'acmauthoryear.bbx': 20872, 'acmauthoryear.cbx': 6245,
-  'acmnumeric.bbx': 19992, 'acmnumeric.cbx': 90, 'acmdatamodel.dbx': 1093,
-  'IEEEtran.cls': 281957, 'IEEEtran.bst': 27564,
-  'llncs.cls': 43405, 'splncs04.bst': 5327,
-};
+// The cache as it stands after scanning one ACM project and one IEEE project.
+// Only the timestamps are illustrative.
+function cacheOf(files) {
+  const scanned = [
+    ['ACM-Reference-Format.bst', 14 * MIN], ['IEEEtran.cls', 3 * 24 * 60 * MIN],
+    ['acmart.cls', 14 * MIN], ['acmauthoryear.bbx', 14 * MIN],
+    ['acmauthoryear.cbx', 14 * MIN], ['acmdatamodel.dbx', 14 * MIN],
+    ['acmnumeric.bbx', 14 * MIN], ['acmnumeric.cbx', 14 * MIN],
+  ].filter(([name]) => files[name]);
+  const entries = scanned.map(([name, age]) => ({
+    name, bytes: files[name].bytes, version: files[name].version, fetchedAt: Date.now() - age,
+  }));
+  return { ok: true, count: entries.length,
+           totalBytes: entries.reduce((n, e) => n + e.bytes, 0), entries };
+}
 
-function stub() {
+function stub(snap) {
   return `<script>
-  const CACHE = ${JSON.stringify(CACHE)};
-  const CTAN = ${JSON.stringify(CTAN)};
-  const SIZES = ${JSON.stringify(SIZES)};
+  const CACHE = ${JSON.stringify(cacheOf(snap.files))};
+  const CTAN = ${JSON.stringify(snap.ctan)};
+  const FILES = ${JSON.stringify(snap.files)};
   window.chrome = {
     runtime: {
       lastError: null,
@@ -67,10 +59,14 @@ function stub() {
           'api.github.com','ctan.math.illinois.edu','ctan.org','ftp.fau.de',
           'mirror.ctan.org','mirrors.ctan.org','portalparts.acm.org',
           'raw.githubusercontent.com','www.ctan.org' ] });
-        if (msg.type === 'ctanPackage') return cb({ ok: true, ...(CTAN[msg.pkg] || { version: null }) });
+        if (msg.type === 'ctanPackage') {
+          return cb(CTAN[msg.pkg] ? { ok: true, ...CTAN[msg.pkg] }
+                                  : { ok: false, error: 'not in the snapshot' });
+        }
         const name = (msg.member || msg.url || '').split('/').pop();
-        const bytes = SIZES[name] || 4096;
-        cb({ ok: true, text: 'x'.repeat(bytes), cached: msg.url && msg.url.includes('acm') ? 'version' : false });
+        if (!FILES[name]) return cb({ ok: false, error: 'not in the snapshot' });
+        cb({ ok: true, text: 'x'.repeat(FILES[name].bytes),
+             cached: msg.url && msg.url.includes('acm') ? 'version' : false });
       },
     },
     storage: { sync: {
@@ -101,13 +97,14 @@ const DARK_LIFT = `<script>
 
 (async () => {
   const html = await (await fetch('../../extension/options/options.html')).text();
+  const snap = await (await fetch('options-snapshot.json')).json();
   const frame = document.getElementById('f');
 
   frame.srcdoc = html
     .replace('href="../styles/base.css"', 'href="../../extension/styles/base.css"')
     .replace(
       '<script src="options.js"><\/script>',
-      stub() + (DARK ? DARK_LIFT : '') +
+      stub(snap) + (DARK ? DARK_LIFT : '') +
       '<script src="../../extension/options/options.js"><\/script>'
     );
 
