@@ -26,6 +26,11 @@ const SNAPSHOT = process.argv.includes('--snapshot');
 
 let pass = 0, fail = 0;
 const failures = [];
+const skips = [];
+function skipped(name, why) {
+  skips.push(name);
+  console.log(`  SKIP ${name}\n         ${why}`);
+}
 function check(name, actual, expected) {
   const a = JSON.stringify(actual), e = JSON.stringify(expected);
   if (a === e) { pass++; console.log(`  ok   ${name}`); }
@@ -38,35 +43,65 @@ function ok(name, cond, detail) {
 
 /* ------------------------------------------------ background worker sandbox */
 
-/* ACM's portal sits behind a WAF that fingerprints the TLS handshake, not just
- * the User-Agent: curl and Chrome are let through, Node/undici is 403'd even
- * with an identical Chrome UA. (Verified: UA-only curl -> 206; Node fetch with
- * the same UA, Accept and Range headers -> 403.) Chrome extensions use Chrome's
- * own stack, so the extension itself is unaffected -- but this harness has to
- * borrow curl to stand in for the browser. The archive is cached under
- * test/fixtures so repeat runs are offline and fast. */
+/* ACM's portal sits behind Cloudflare, which fingerprints the client, not just
+ * the User-Agent. In August 2026 curl was let through while Node/undici was
+ * 403'd even with an identical Chrome UA. By October 2026 curl was challenged
+ * too -- 403 with `cf-mitigated: challenge`, a JavaScript challenge only a
+ * browser can pass -- while Chrome's own fetch, from the same machine and
+ * without cookies, still got 206 and the real archive. The extension uses
+ * Chrome's stack and is unaffected; this harness can only borrow curl.
+ *
+ * So a challenge is reported, not hidden: the checks that need the archive
+ * are SKIPPED with the reason, never counted as passes, and anything else ACM
+ * answers -- a 404 for a moved archive, say -- still fails. The archive is
+ * cached under test/fixtures once a download succeeds. */
 const ACM_HOST = 'portalparts.acm.org';
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 
+/** True for a file that is plainly a ZIP archive rather than an error page. */
+function isZip(file) {
+  try {
+    const fd = fs.openSync(file, 'r');
+    const head = Buffer.alloc(4);
+    fs.readSync(fd, head, 0, 4, 0);
+    fs.closeSync(fd);
+    return head.equals(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+  } catch {
+    return false;
+  }
+}
+
+/* The only thing fetched from ACM is its template archive, so only a 2xx
+ * response that is a real ZIP is cached: an error page cached once would
+ * otherwise be served as the archive on every later run. The real status goes
+ * back to the worker, so its own error handling is what gets exercised. */
 function curlToCache(url) {
   const { execFileSync } = require('child_process');
   const cache = path.join(FIX, 'cache-' + url.split('/').pop());
-  if (!fs.existsSync(cache) || fs.statSync(cache).size < 1024) {
-    console.log(`  (downloading ${url.split('/').pop()} via curl -> ${path.basename(cache)})`);
-    execFileSync('curl', ['-sL', '--max-time', '180', '-H', `User-Agent: ${BROWSER_UA}`,
-      '-o', cache, url], { stdio: 'inherit' });
+  if (isZip(cache)) return { status: 200, buf: fs.readFileSync(cache) };
+  fs.rmSync(cache, { force: true });
+
+  console.log(`  (downloading ${url.split('/').pop()} via curl -> ${path.basename(cache)})`);
+  const part = cache + '.part';
+  const out = execFileSync('curl', ['-sL', '--max-time', '180', '-H', `User-Agent: ${BROWSER_UA}`,
+    '-D', '-', '-o', part, '-w', '%{http_code}', url], { encoding: 'utf8' });
+  const status = Number(out.slice(-3));
+  if (status >= 200 && status < 300 && isZip(part)) {
+    fs.renameSync(part, cache);
+    return { status, buf: fs.readFileSync(cache) };
   }
-  return fs.readFileSync(cache);
+  fs.rmSync(part, { force: true });
+  return { status, challenged: /^cf-mitigated:\s*challenge\s*$/im.test(out), buf: Buffer.alloc(0) };
 }
 
 function browserLikeFetch(url, init) {
   if (new URL(url).hostname === ACM_HOST) {
-    const buf = curlToCache(String(url));
+    const { status, buf } = curlToCache(String(url));
     return Promise.resolve({
-      ok: true,
-      status: 200,
+      ok: status >= 200 && status < 300,
+      status,
       headers: { get: (h) => (h.toLowerCase() === 'content-length' ? String(buf.length) : null) },
       arrayBuffer: async () => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
       text: async () => buf.toString('utf8'),
@@ -204,9 +239,25 @@ function buildProjectZip() {
   check('detected via \\documentclass', det.hits[0].byClass, true);
   check('and via the bundled .cls', det.hits[0].byFile, true);
 
+  // Decided once, up front, so every check that needs ACM's archive is either
+  // run or reported as skipped -- never quietly passed.
+  let acmRefused = null;
+  if (!OFFLINE) {
+    const acmUrl = Object.values(registry.sources || {})
+      .map((s) => s.url).find((u) => u && new URL(u).hostname === ACM_HOST);
+    const probe = curlToCache(acmUrl);
+    if (probe.challenged) {
+      acmRefused = `ACM's Cloudflare answered curl with a bot challenge (HTTP ${probe.status}); ` +
+        'Chrome, which the extension uses, is let through';
+    }
+  }
+
   let plan = null; // the cache section below compares against this first scan
   if (OFFLINE) {
     console.log('\n(--offline: skipping the network-backed scan)');
+  } else if (acmRefused) {
+    console.log('\nfull scan (live CTAN + live ACM template zip)');
+    skipped('end-to-end scan of an acmart project', acmRefused);
   } else {
     console.log('\nfull scan (live CTAN + live ACM template zip)');
     const steps = [];
@@ -223,7 +274,7 @@ function buildProjectZip() {
       `newText length = ${cls.newText && cls.newText.length}`);
     ok('upstream is a real class file',
       /ProvidesClass\{acmart\}/.test(cls.newText || ''));
-    check('upstream version parsed', cls.upstream.version, '2.20');
+    check('upstream version parsed', cls.upstream && cls.upstream.version, '2.20');
     check('status is outdated', cls.status, 'outdated');
     ok('marked applicable', cls.applicable === true);
     ok('pre-selected for the user', cls.selected === true);
@@ -251,7 +302,10 @@ function buildProjectZip() {
       Array.isArray(plan.unclaimed));
   }
 
-  if (!OFFLINE) {
+  if (!OFFLINE && acmRefused) {
+    console.log('\ncache: one archive download serves every tracked file');
+    skipped('the archive cache (download once, reuse, clear)', acmRefused);
+  } else if (!OFFLINE) {
     console.log('\ncache: one archive download serves every tracked file');
     const acmHits = () => netLog.filter((n) => n.url.includes(ACM_HOST)).length;
     const afterFirst = acmHits();
@@ -275,7 +329,7 @@ function buildProjectZip() {
 
     check('no further archive fetches', acmHits(), afterFirst);
     const cls2 = plan2.items.find((i) => i.name === 'acmart.cls');
-    check('still resolved the upstream file', cls2.upstream.version, '2.20');
+    check('still resolved the upstream file', cls2.upstream && cls2.upstream.version, '2.20');
     check('and it came from the cache', cls2.fromCache, 'version');
     ok('served identical bytes',
       cls2.newText === plan.items.find((i) => i.name === 'acmart.cls').newText);
@@ -301,6 +355,7 @@ function buildProjectZip() {
     const call = (msg) => new Promise((res) => worker.__listener(msg, {}, res));
     const sourceFailures = [];
     const versionDrift = [];
+    const fromAcm = [];
     const snapshot = { capturedAt: new Date().toISOString(), ctan: {}, files: {} };
     let fetched = 0;
 
@@ -314,6 +369,8 @@ function buildProjectZip() {
       for (const f of t.files) {
         if (f.action !== 'replace') continue;
         const shared = f.source.ref ? registry.sources[f.source.ref] : null;
+        const url = shared ? shared.url : f.source.url;
+        if (acmRefused && new URL(url).hostname === ACM_HOST) { fromAcm.push(f.name); continue; }
         const res = shared
           ? await call({ type: 'fetchZipMember', url: shared.url, member: f.source.member,
               versionFrom: f.versionFrom, expectName: f.expectName })
@@ -334,12 +391,15 @@ function buildProjectZip() {
       sourceFailures.join('\n         '));
     ok('every class that tracks its CTAN package reads as CTAN\'s version',
       versionDrift.length === 0, versionDrift.join('\n         '));
+    if (fromAcm.length) skipped(`${fromAcm.length} files from ACM's archive (${fromAcm.join(', ')})`, acmRefused);
 
     // Only a complete, verified run is worth rendering.
-    if (SNAPSHOT && sourceFailures.length === 0) {
+    if (SNAPSHOT && sourceFailures.length === 0 && fromAcm.length === 0) {
       const out = path.join(__dirname, 'preview', 'options-snapshot.json');
       fs.writeFileSync(out, JSON.stringify(snapshot, null, 2) + '\n');
       console.log(`  wrote ${path.relative(ROOT, out)}`);
+    } else if (SNAPSHOT) {
+      console.log('  snapshot NOT written: not every source was fetched and verified');
     }
   }
 
@@ -579,8 +639,16 @@ function buildProjectZip() {
     manifest.action && manifest.action.default_popup === 'popup/popup.html');
 
   console.log(`\n${'='.repeat(56)}`);
-  console.log(`${pass} passed, ${fail} failed`);
+  console.log(`${pass} passed, ${fail} failed` + (skips.length ? `, ${skips.length} skipped` : ''));
   if (fail) { console.log('\nFailed:'); failures.forEach((f) => console.log('  - ' + f)); }
+  if (skips.length) {
+    console.log('\nSkipped:');
+    skips.forEach((s) => console.log('  - ' + s));
+    // Surfaced in the Actions run summary, so a skip cannot pass unnoticed.
+    if (process.env.GITHUB_ACTIONS === 'true') {
+      console.log(`::warning title=ACM checks skipped::${skips.length} check groups skipped: ${acmRefused}`);
+    }
+  }
   process.exit(fail ? 1 : 0);
 })().catch((err) => {
   console.error('\nharness error:', err);

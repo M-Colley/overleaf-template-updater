@@ -762,9 +762,14 @@ checkbox on for your first run.
 failing, that's the first thing to suspect; `extension/lib/overleaf.js` is where
 they live.
 
-**ACM's portal fingerprints TLS.** It 403s Node/undici even with a browser
-User-Agent, while Chrome and curl pass. The extension is unaffected (it uses
-Chrome's stack); the test harness borrows curl to stand in for the browser.
+**ACM's portal only lets browsers through.** Its Cloudflare front end 403s
+Node/undici even with a browser User-Agent, and since October 2026 answers curl
+with a JavaScript bot challenge too, while Chrome's own fetch still gets the
+archive. The extension is unaffected, because it uses Chrome's stack. The test
+harness can only borrow curl, so it caches the archive after one successful
+download. When ACM challenges it — on a fresh clone, or on CI's datacenter
+runners — the ACM-dependent checks are reported as **skipped**, with the
+reason, never as passed, and CI flags them with a warning.
 
 **Version detection is best-effort.** Some `.bst`, `.dbx` and `.sty` files carry
 no version at all — `acl.sty` and `tmlr.sty` among them — or carry only somebody
