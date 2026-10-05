@@ -1,10 +1,9 @@
 /* Test fixtures.
  *
  * The real upstream class files are deliberately NOT committed. They are
- * third-party works under their own licences -- IEEEtran and acmart under the
- * LPPL, llncs under Springer's own terms -- and vendoring them into an
- * MIT-licensed repository would misstate their licensing and, for llncs,
- * redistribute a file whose terms restrict exactly that.
+ * third-party works under their own licences -- most under the LPPL, llncs
+ * under CC BY 4.0 -- and vendoring them into an MIT-licensed repository would
+ * misstate their licensing, and take on each licence's redistribution terms.
  *
  * So they are downloaded on demand into this directory, which is gitignored.
  * Tests still run against the genuine articles rather than hand-written

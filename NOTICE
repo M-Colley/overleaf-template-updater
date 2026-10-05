@@ -14,7 +14,8 @@ user's own Overleaf project. It does not redistribute them, and the MIT licence
 above does not apply to them. Each remains under its own terms:
 
   acmart.cls, ACM-Reference-Format.bst, acm*.bbx/.cbx/.dbx
-      Copyright ACM / Boris Veytsman. LaTeX Project Public License (LPPL).
+      Copyright Association for Computing Machinery; maintained by Boris
+      Veytsman. LaTeX Project Public License (LPPL).
       Fetched from https://www.acm.org/publications/proceedings-template
 
   IEEEtran.cls, IEEEtran.bst, IEEEtranS.bst, IEEEtranN.bst, IEEEtranSA.bst,
@@ -23,8 +24,8 @@ above does not apply to them. Each remains under its own terms:
       Fetched from CTAN.
 
   llncs.cls, splncs04.bst
-      Copyright Springer-Verlag. Distributed under Springer's own terms.
-      Fetched from CTAN.
+      Copyright Springer. Creative Commons Attribution 4.0 (CC BY 4.0) or
+      later, as declared in the package README. Fetched from CTAN.
 
   elsarticle.cls
       Copyright Elsevier. Detected and reported only; never downloaded or
@@ -41,7 +42,9 @@ above does not apply to them. Each remains under its own terms:
       https://github.com/dagstuhl-publishing/styles
 
   ceurart.cls
-      Copyright Dmitry S. Kulyabov. LPPL. Fetched from
+      Copyright Dmitry S. Kulyabov. LPPL 1.3c or later, as declared in the
+      file's own header. (The repository also carries a CC BY-SA licence
+      file, and its README lists CC BY 4.0.) Fetched from
       https://github.com/yamadharma/ceurart
 
   acl.sty, acl_natbib.bst
