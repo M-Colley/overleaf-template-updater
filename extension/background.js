@@ -84,6 +84,14 @@ function assertUsable(text, url, expectName) {
   if (looksLikeHtml(text)) {
     throw new Error(`got an HTML page instead of a source file from ${url}`);
   }
+  // A BibTeX style has no \Provides line for expectName to check, but every
+  // one declares its ENTRY fields and later READs the database -- a style that
+  // never does cannot produce a bibliography. READ sits near the end of the
+  // file, so a mirror's truncated copy fails here where it would pass for HTML.
+  if (/\.bst$/i.test(String(url).split('#').pop()) &&
+      !(/^\s*ENTRY\b/m.test(text) && /^\s*READ\b/m.test(text))) {
+    throw new Error(`${url} is not a complete BibTeX style (no ENTRY/READ)`);
+  }
   if (!expectName) return;
 
   const provides = OTU.latex.parseProvides(text);

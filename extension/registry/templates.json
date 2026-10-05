@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "updated": "2026-08-27",
-  "note": "Every source below was probed against the live server. 'replace' entries have a verified, downloadable BUILT file. 'report-only' entries are published as .dtx sources only, so no client can produce a correct .cls without running LaTeX -- for those we detect and report drift rather than silently writing a wrong file. CTAN's ctan.org/tex-archive path is a round-robin redirector and individual mirrors intermittently return 403 pages or truncated files, so raw sources carry explicit mirror fallbacks and every downloaded class is checked with expectName before it can be written to a project.",
+  "updated": "2026-10-04",
+  "note": "Every source below was probed against the live server, and every file's version was read from the genuine upstream file by the extension's own parser. 'replace' entries have a verified, downloadable BUILT file. 'report-only' entries are published as .dtx sources only (or have been superseded by a differently named file), so no client can produce a correct replacement without running LaTeX -- for those we detect and report drift rather than silently writing a wrong file. CTAN's ctan.org/tex-archive path is a round-robin redirector and individual mirrors intermittently return 403 pages or truncated files, so raw sources carry explicit mirror fallbacks and every downloaded class is checked with expectName before it can be written to a project. versionFrom 'none' marks a file whose only version-shaped text is not its own version (a BibTeX lineage number, the first entry of a changelog); those are compared by content alone, because a wrong version would report a stale file as current.",
   "sources": {
     "acm-primary-zip": {
       "kind": "zip",
@@ -167,6 +167,64 @@
               "https://ftp.fau.de/ctan/macros/latex/contrib/IEEEtran/bibtex/IEEEtran.bst"
             ]
           }
+        },
+        {
+          "name": "IEEEtranS.bst",
+          "action": "replace",
+          "versionFrom": "comment-scan",
+          "onlyIfPresent": true,
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/IEEEtran/bibtex/IEEEtranS.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/IEEEtran/bibtex/IEEEtranS.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/IEEEtran/bibtex/IEEEtranS.bst"
+            ]
+          },
+          "comment": "The sorted variant."
+        },
+        {
+          "name": "IEEEtranN.bst",
+          "action": "replace",
+          "versionFrom": "comment-scan",
+          "onlyIfPresent": true,
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/IEEEtran/bibtex/IEEEtranN.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/IEEEtran/bibtex/IEEEtranN.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/IEEEtran/bibtex/IEEEtranN.bst"
+            ]
+          },
+          "comment": "The natbib-compatible variant."
+        },
+        {
+          "name": "IEEEtranSA.bst",
+          "action": "replace",
+          "versionFrom": "comment-scan",
+          "onlyIfPresent": true,
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/IEEEtran/bibtex/IEEEtranSA.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/IEEEtran/bibtex/IEEEtranSA.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/IEEEtran/bibtex/IEEEtranSA.bst"
+            ]
+          }
+        },
+        {
+          "name": "IEEEtranSN.bst",
+          "action": "replace",
+          "versionFrom": "comment-scan",
+          "onlyIfPresent": true,
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/IEEEtran/bibtex/IEEEtranSN.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/IEEEtran/bibtex/IEEEtranSN.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/IEEEtran/bibtex/IEEEtranSN.bst"
+            ]
+          }
         }
       ]
     },
@@ -212,7 +270,7 @@
         {
           "name": "splncs04.bst",
           "action": "replace",
-          "versionFrom": "comment-scan",
+          "versionFrom": "none",
           "source": {
             "kind": "raw",
             "url": "https://ctan.org/tex-archive/macros/latex/contrib/llncs/splncs04.bst",
@@ -220,7 +278,8 @@
               "https://ctan.math.illinois.edu/macros/latex/contrib/llncs/splncs04.bst",
               "https://ftp.fau.de/ctan/macros/latex/contrib/llncs/splncs04.bst"
             ]
-          }
+          },
+          "comment": "Carries no version of its own. Its only version-shaped text is 'For use with BibTeX version 0.99a or later', which a comment scan used to report as the file's version -- so a stale copy compared as 'current'."
         }
       ]
     },
@@ -253,6 +312,1000 @@
           "reason": "elsarticle is published on CTAN as elsarticle.dtx only; no compiled .cls is distributed anywhere, so it cannot be fetched and replaced safely.",
           "recommendation": "unbundle",
           "recommendationText": "Overleaf's TeX Live already carries a current elsarticle. Deleting the project-local elsarticle.cls lets that system copy take over, which is usually the fastest way to get the newer class.",
+          "versionTracksPackage": true,
+          "comment": "Declares itself as \\ProvidesClass{\\@shortjid}[\\RCSdate, \\RCSversion: \\@journal]; the version is only readable by expanding those macros."
+        },
+        {
+          "name": "elsarticle-num.bst",
+          "action": "replace",
+          "versionFrom": "comment-scan",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/elsarticle/elsarticle-num.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/elsarticle/elsarticle-num.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/elsarticle/elsarticle-num.bst"
+            ]
+          },
+          "comment": "Unlike the class, Elsevier's bibliography styles ARE published built on CTAN."
+        },
+        {
+          "name": "elsarticle-harv.bst",
+          "action": "replace",
+          "versionFrom": "comment-scan",
+          "onlyIfPresent": true,
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/elsarticle/elsarticle-harv.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/elsarticle/elsarticle-harv.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/elsarticle/elsarticle-harv.bst"
+            ]
+          }
+        },
+        {
+          "name": "elsarticle-num-names.bst",
+          "action": "replace",
+          "versionFrom": "comment-scan",
+          "onlyIfPresent": true,
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/elsarticle/elsarticle-num-names.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/elsarticle/elsarticle-num-names.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/elsarticle/elsarticle-num-names.bst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "els-cas",
+      "name": "Elsevier CAS Templates (cas-sc / cas-dc)",
+      "usedBy": [
+        "Elsevier journals using the CAS single- or double-column layout"
+      ],
+      "homepage": "https://ctan.org/pkg/els-cas-templates",
+      "detect": {
+        "documentclass": [
+          "cas-sc",
+          "cas-dc"
+        ],
+        "files": [
+          "cas-sc.cls",
+          "cas-dc.cls",
+          "cas-common.sty"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "els-cas-templates"
+        }
+      },
+      "files": [
+        {
+          "name": "cas-sc.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/els-cas-templates/cas-sc.cls",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/els-cas-templates/cas-sc.cls",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/els-cas-templates/cas-sc.cls"
+            ]
+          },
+          "versionTracksPackage": true,
+          "expectName": "cas-sc",
+          "comment": "Declares itself as \\ProvidesClass{\\RCSfile}[\\RCSdate, \\RCSversion: ...]."
+        },
+        {
+          "name": "cas-dc.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/els-cas-templates/cas-dc.cls",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/els-cas-templates/cas-dc.cls",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/els-cas-templates/cas-dc.cls"
+            ]
+          },
+          "versionTracksPackage": true,
+          "expectName": "cas-dc"
+        },
+        {
+          "name": "cas-common.sty",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/els-cas-templates/cas-common.sty",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/els-cas-templates/cas-common.sty",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/els-cas-templates/cas-common.sty"
+            ]
+          },
+          "versionTracksPackage": true,
+          "comment": "Has no \\Provides line at all; its version is read from \\def\\RCSversion. Without one there is no name for expectName to check."
+        },
+        {
+          "name": "cas-model2-names.bst",
+          "action": "replace",
+          "versionFrom": "comment-scan",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/els-cas-templates/cas-model2-names.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/els-cas-templates/cas-model2-names.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/els-cas-templates/cas-model2-names.bst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "lipics",
+      "name": "Dagstuhl LIPIcs (lipics-v2021)",
+      "usedBy": [
+        "ICALP",
+        "STACS",
+        "SoCG",
+        "ESA",
+        "CONCUR",
+        "ITCS",
+        "DISC",
+        "other LIPIcs proceedings"
+      ],
+      "homepage": "https://github.com/dagstuhl-publishing/styles",
+      "detect": {
+        "documentclass": [
+          "lipics-v2021"
+        ],
+        "files": [
+          "lipics-v2021.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "file",
+          "file": "lipics-v2021.cls"
+        }
+      },
+      "files": [
+        {
+          "name": "lipics-v2021.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://raw.githubusercontent.com/dagstuhl-publishing/styles/master/LIPIcs/authors/lipics-v2021.cls"
+          },
+          "comment": "Not on CTAN. Dagstuhl Publishing's own repository is the canonical source.",
+          "expectName": "lipics-v2021"
+        }
+      ]
+    },
+    {
+      "id": "oasics",
+      "name": "Dagstuhl OASIcs (oasics-v2021)",
+      "usedBy": [
+        "OASIcs workshop proceedings"
+      ],
+      "homepage": "https://github.com/dagstuhl-publishing/styles",
+      "detect": {
+        "documentclass": [
+          "oasics-v2021"
+        ],
+        "files": [
+          "oasics-v2021.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "file",
+          "file": "oasics-v2021.cls"
+        }
+      },
+      "files": [
+        {
+          "name": "oasics-v2021.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://raw.githubusercontent.com/dagstuhl-publishing/styles/master/OASIcs/authors/oasics-v2021.cls"
+          },
+          "expectName": "oasics-v2021"
+        }
+      ]
+    },
+    {
+      "id": "ceurart",
+      "name": "CEUR Workshop Proceedings (ceurart)",
+      "usedBy": [
+        "CEUR-WS.org workshop proceedings"
+      ],
+      "homepage": "https://github.com/yamadharma/ceurart",
+      "detect": {
+        "documentclass": [
+          "ceurart"
+        ],
+        "files": [
+          "ceurart.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "file",
+          "file": "ceurart.cls"
+        }
+      },
+      "files": [
+        {
+          "name": "ceurart.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://raw.githubusercontent.com/yamadharma/ceurart/master/tex/latex/ceurart/ceurart.cls"
+          },
+          "comment": "An expl3 class: \\ProvidesExplClass{\\RCSfile}{\\RCSdate}{\\RCSversion}{...}. Not on CTAN; this is the template CEUR-WS.org links to.",
+          "expectName": "ceurart"
+        }
+      ]
+    },
+    {
+      "id": "acl",
+      "name": "ACL Style Files (acl.sty)",
+      "usedBy": [
+        "ACL",
+        "EMNLP",
+        "NAACL",
+        "EACL",
+        "AACL",
+        "ACL Rolling Review",
+        "*ACL workshops"
+      ],
+      "homepage": "https://github.com/acl-org/acl-style-files",
+      "detect": {
+        "packages": [
+          "acl"
+        ],
+        "files": [
+          "acl.sty"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "file",
+          "file": "acl.sty"
+        }
+      },
+      "files": [
+        {
+          "name": "acl.sty",
+          "action": "replace",
+          "versionFrom": "none",
+          "source": {
+            "kind": "raw",
+            "url": "https://raw.githubusercontent.com/acl-org/acl-style-files/master/acl.sty"
+          },
+          "comment": "Unversioned: no \\ProvidesPackage and no version comment, so drift is detected by content."
+        },
+        {
+          "name": "acl_natbib.bst",
+          "action": "replace",
+          "versionFrom": "none",
+          "source": {
+            "kind": "raw",
+            "url": "https://raw.githubusercontent.com/acl-org/acl-style-files/master/acl_natbib.bst"
+          },
+          "comment": "Its version-shaped text belongs to its tools (urlbst 0.9.1, natbib v5.3), not to the style."
+        }
+      ]
+    },
+    {
+      "id": "cvpr",
+      "name": "CVPR Author Kit (cvpr.sty)",
+      "usedBy": [
+        "CVPR"
+      ],
+      "homepage": "https://github.com/cvpr-org/author-kit",
+      "detect": {
+        "packages": [
+          "cvpr"
+        ],
+        "files": [
+          "cvpr.sty"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "file",
+          "file": "cvpr.sty"
+        }
+      },
+      "files": [
+        {
+          "name": "cvpr.sty",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://raw.githubusercontent.com/cvpr-org/author-kit/main/cvpr.sty"
+          },
+          "comment": "Versioned by edition year alone ([2026 LaTeX class for IEEE CVPR]), which is exactly what catches last year's kit reused for this year's deadline.",
+          "expectName": "cvpr"
+        },
+        {
+          "name": "ieeenat_fullname.bst",
+          "action": "replace",
+          "versionFrom": "none",
+          "source": {
+            "kind": "raw",
+            "url": "https://raw.githubusercontent.com/cvpr-org/author-kit/main/ieeenat_fullname.bst"
+          },
+          "comment": "Derived from abbrvnat.bst and still carries that file's 0.99b header."
+        }
+      ]
+    },
+    {
+      "id": "tmlr",
+      "name": "Transactions on Machine Learning Research (tmlr.sty)",
+      "usedBy": [
+        "TMLR"
+      ],
+      "homepage": "https://github.com/JmlrOrg/tmlr-style-file",
+      "detect": {
+        "packages": [
+          "tmlr"
+        ],
+        "files": [
+          "tmlr.sty"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "file",
+          "file": "tmlr.sty"
+        }
+      },
+      "files": [
+        {
+          "name": "tmlr.sty",
+          "action": "replace",
+          "versionFrom": "none",
+          "source": {
+            "kind": "raw",
+            "url": "https://raw.githubusercontent.com/JmlrOrg/tmlr-style-file/main/tmlr.sty"
+          }
+        },
+        {
+          "name": "tmlr.bst",
+          "action": "replace",
+          "versionFrom": "none",
+          "source": {
+            "kind": "raw",
+            "url": "https://raw.githubusercontent.com/JmlrOrg/tmlr-style-file/main/tmlr.bst"
+          },
+          "comment": "A copy of icml2010.bst; its 0.99b header is BibTeX lineage."
+        }
+      ]
+    },
+    {
+      "id": "mnras",
+      "name": "Monthly Notices of the RAS (mnras)",
+      "usedBy": [
+        "MNRAS"
+      ],
+      "homepage": "https://ctan.org/pkg/mnras",
+      "detect": {
+        "documentclass": [
+          "mnras"
+        ],
+        "files": [
+          "mnras.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "mnras"
+        }
+      },
+      "files": [
+        {
+          "name": "mnras.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/mnras/mnras.cls",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/mnras/mnras.cls",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/mnras/mnras.cls"
+            ]
+          },
+          "versionTracksPackage": true,
+          "expectName": "mnras"
+        },
+        {
+          "name": "mnras.bst",
+          "action": "replace",
+          "versionFrom": "none",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/mnras/mnras.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/mnras/mnras.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/mnras/mnras.bst"
+            ]
+          },
+          "comment": "Its first version-shaped text is the 1995 changelog entry 'First release (version 1.1b)'; reading that as current would be thirty years wrong."
+        }
+      ]
+    },
+    {
+      "id": "aastex",
+      "name": "AAS Journals (AASTeX)",
+      "usedBy": [
+        "ApJ",
+        "ApJL",
+        "ApJS",
+        "AJ",
+        "PSJ"
+      ],
+      "homepage": "https://ctan.org/pkg/aastex",
+      "detect": {
+        "documentclass": [
+          "aastex701",
+          "aastex632",
+          "aastex631",
+          "aastex63"
+        ],
+        "files": [
+          "aastex701.cls",
+          "aastex632.cls",
+          "aastex631.cls",
+          "aastex63.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "aastex"
+        }
+      },
+      "files": [
+        {
+          "name": "aastex701.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/aastex/aastex701.cls",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/aastex/aastex701.cls",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/aastex/aastex701.cls"
+            ]
+          },
+          "versionTracksPackage": true,
+          "expectName": "aastex701"
+        },
+        {
+          "name": "aasjournalv7.bst",
+          "action": "replace",
+          "versionFrom": "comment-scan",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/aastex/aasjournalv7.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/aastex/aasjournalv7.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/aastex/aasjournalv7.bst"
+            ]
+          },
+          "comment": "Versioned by its newest changelog entry, 'Revision 1.19'."
+        },
+        {
+          "name": "aastex632.cls",
+          "action": "report-only",
+          "versionFrom": "provides",
+          "onlyIfPresent": true,
+          "reason": "Superseded by aastex701.cls (AASTeX 7). The version is part of the class name, so there is no newer aastex632.cls to replace this with: moving to AASTeX 7 means changing \\documentclass{aastex632} to {aastex701} in your .tex, which this tool deliberately never edits.",
+          "versionTracksPackage": true
+        },
+        {
+          "name": "aastex631.cls",
+          "action": "report-only",
+          "versionFrom": "provides",
+          "onlyIfPresent": true,
+          "reason": "Superseded by aastex701.cls (AASTeX 7). The version is part of the class name, so there is no newer aastex631.cls to replace this with: moving to AASTeX 7 means changing \\documentclass{aastex631} to {aastex701} in your .tex, which this tool deliberately never edits.",
+          "versionTracksPackage": true
+        },
+        {
+          "name": "aastex63.cls",
+          "action": "report-only",
+          "versionFrom": "provides",
+          "onlyIfPresent": true,
+          "reason": "Superseded by aastex701.cls (AASTeX 7). The version is part of the class name, so there is no newer aastex63.cls to replace this with: moving to AASTeX 7 means changing \\documentclass{aastex63} to {aastex701} in your .tex, which this tool deliberately never edits.",
+          "versionTracksPackage": true
+        }
+      ]
+    },
+    {
+      "id": "oup",
+      "name": "Oxford University Press (oup-authoring-template)",
+      "usedBy": [
+        "Oxford University Press journals"
+      ],
+      "homepage": "https://ctan.org/pkg/oup-authoring-template",
+      "detect": {
+        "documentclass": [
+          "oup-authoring-template"
+        ],
+        "files": [
+          "oup-authoring-template.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "oup-authoring-template"
+        }
+      },
+      "files": [
+        {
+          "name": "oup-authoring-template.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/oup-authoring-template/oup-authoring-template.cls",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/oup-authoring-template/oup-authoring-template.cls",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/oup-authoring-template/oup-authoring-template.cls"
+            ]
+          },
+          "versionTracksPackage": true,
+          "expectName": "oup-authoring-template",
+          "comment": "Declares itself as \\ProvidesClass{\\classname}[\\lastmodifieddate\\space\\versionnumber]."
+        },
+        {
+          "name": "oup-plain.bst",
+          "action": "replace",
+          "versionFrom": "none",
+          "onlyIfPresent": true,
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/oup-authoring-template/oup-plain.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/oup-authoring-template/oup-plain.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/oup-authoring-template/oup-plain.bst"
+            ]
+          },
+          "comment": "'Version 0.99b' is the version of BibTeX's plain.bst it was derived from."
+        },
+        {
+          "name": "oup-abbrvnat.bst",
+          "action": "replace",
+          "versionFrom": "none",
+          "onlyIfPresent": true,
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/oup-authoring-template/oup-abbrvnat.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/oup-authoring-template/oup-abbrvnat.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/oup-authoring-template/oup-abbrvnat.bst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "asmeconf",
+      "name": "ASME Conference Paper (asmeconf)",
+      "usedBy": [
+        "ASME conferences"
+      ],
+      "homepage": "https://ctan.org/pkg/asmeconf",
+      "detect": {
+        "documentclass": [
+          "asmeconf"
+        ],
+        "files": [
+          "asmeconf.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "asmeconf"
+        }
+      },
+      "files": [
+        {
+          "name": "asmeconf.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/asmeconf/asmeconf.cls",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/asmeconf/asmeconf.cls",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/asmeconf/asmeconf.cls"
+            ]
+          },
+          "versionTracksPackage": true,
+          "expectName": "asmeconf",
+          "comment": "The declaration names only the date ([\\versiondate ASME Conference ...]); the version lives in \\versionno."
+        },
+        {
+          "name": "asmeconf.bst",
+          "action": "replace",
+          "versionFrom": "comment-scan",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/asmeconf/asmeconf.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/asmeconf/asmeconf.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/asmeconf/asmeconf.bst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "asmejour",
+      "name": "ASME Journal Paper (asmejour)",
+      "usedBy": [
+        "ASME journals"
+      ],
+      "homepage": "https://ctan.org/pkg/asmejour",
+      "detect": {
+        "documentclass": [
+          "asmejour"
+        ],
+        "files": [
+          "asmejour.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "asmejour"
+        }
+      },
+      "files": [
+        {
+          "name": "asmejour.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/asmejour/asmejour.cls",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/asmejour/asmejour.cls",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/asmejour/asmejour.cls"
+            ]
+          },
+          "versionTracksPackage": true,
+          "expectName": "asmejour"
+        },
+        {
+          "name": "asmejour.bst",
+          "action": "replace",
+          "versionFrom": "comment-scan",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/asmejour/asmejour.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/asmejour/asmejour.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/asmejour/asmejour.bst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "jacow",
+      "name": "JACoW Accelerator Conferences (jacow)",
+      "usedBy": [
+        "IPAC",
+        "LINAC",
+        "other JACoW.org conferences"
+      ],
+      "homepage": "https://ctan.org/pkg/jacow",
+      "detect": {
+        "documentclass": [
+          "jacow"
+        ],
+        "files": [
+          "jacow.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "jacow"
+        }
+      },
+      "files": [
+        {
+          "name": "jacow.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/jacow/jacow.cls",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/jacow/jacow.cls",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/jacow/jacow.cls"
+            ]
+          },
+          "versionTracksPackage": true,
+          "expectName": "jacow"
+        }
+      ]
+    },
+    {
+      "id": "quantum",
+      "name": "Quantum Journal (quantumarticle)",
+      "usedBy": [
+        "Quantum"
+      ],
+      "homepage": "https://ctan.org/pkg/quantumarticle",
+      "detect": {
+        "documentclass": [
+          "quantumarticle"
+        ],
+        "files": [
+          "quantumarticle.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "quantumarticle"
+        }
+      },
+      "files": [
+        {
+          "name": "quantumarticle.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/quantumarticle/quantumarticle.cls",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/quantumarticle/quantumarticle.cls",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/quantumarticle/quantumarticle.cls"
+            ]
+          },
+          "versionTracksPackage": true,
+          "expectName": "quantumarticle"
+        },
+        {
+          "name": "quantum.bst",
+          "action": "replace",
+          "versionFrom": "none",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/quantumarticle/quantum.bst",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/quantumarticle/quantum.bst",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/quantumarticle/quantum.bst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "iacrj",
+      "name": "IACR Journals (iacrj)",
+      "usedBy": [
+        "IACR Communications in Cryptology",
+        "ToSC",
+        "TCHES"
+      ],
+      "homepage": "https://ctan.org/pkg/iacrj",
+      "detect": {
+        "documentclass": [
+          "iacrj"
+        ],
+        "files": [
+          "iacrj.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "iacrj"
+        }
+      },
+      "files": [
+        {
+          "name": "iacrj.cls",
+          "action": "replace",
+          "versionFrom": "provides",
+          "source": {
+            "kind": "raw",
+            "url": "https://ctan.org/tex-archive/macros/latex/contrib/iacrj/iacrj.cls",
+            "mirrors": [
+              "https://ctan.math.illinois.edu/macros/latex/contrib/iacrj/iacrj.cls",
+              "https://ftp.fau.de/ctan/macros/latex/contrib/iacrj/iacrj.cls"
+            ]
+          },
+          "versionTracksPackage": true,
+          "expectName": "iacrj"
+        }
+      ]
+    },
+    {
+      "id": "revtex",
+      "name": "REVTeX (APS / AIP journals)",
+      "usedBy": [
+        "Physical Review journals",
+        "AIP journals"
+      ],
+      "homepage": "https://ctan.org/pkg/revtex",
+      "detect": {
+        "documentclass": [
+          "revtex4-2"
+        ],
+        "files": [
+          "revtex4-2.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "revtex"
+        }
+      },
+      "files": [
+        {
+          "name": "revtex4-2.cls",
+          "action": "report-only",
+          "versionFrom": "provides",
+          "reason": "REVTeX is published on CTAN as .dtx sources only; no compiled .cls is distributed, so it cannot be fetched and replaced safely.",
+          "recommendation": "unbundle",
+          "recommendationText": "Overleaf's TeX Live carries REVTeX 4.2. Deleting the project-local revtex4-2.cls lets that system copy take over.",
+          "versionTracksPackage": true
+        }
+      ]
+    },
+    {
+      "id": "apa7",
+      "name": "APA 7th Edition (apa7)",
+      "usedBy": [
+        "APA-style manuscripts",
+        "psychology and behavioural science journals"
+      ],
+      "homepage": "https://ctan.org/pkg/apa7",
+      "detect": {
+        "documentclass": [
+          "apa7"
+        ],
+        "files": [
+          "apa7.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "apa7"
+        }
+      },
+      "files": [
+        {
+          "name": "apa7.cls",
+          "action": "report-only",
+          "versionFrom": "provides",
+          "reason": "apa7 is published on CTAN as apa7.dtx only; no compiled .cls is distributed, so it cannot be fetched and replaced safely.",
+          "recommendation": "unbundle",
+          "recommendationText": "Overleaf's TeX Live carries apa7. Deleting the project-local apa7.cls lets that system copy take over.",
+          "versionTracksPackage": true
+        }
+      ]
+    },
+    {
+      "id": "achemso",
+      "name": "American Chemical Society (achemso)",
+      "usedBy": [
+        "ACS journals"
+      ],
+      "homepage": "https://ctan.org/pkg/achemso",
+      "detect": {
+        "documentclass": [
+          "achemso"
+        ],
+        "files": [
+          "achemso.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "achemso"
+        }
+      },
+      "files": [
+        {
+          "name": "achemso.cls",
+          "action": "report-only",
+          "versionFrom": "provides",
+          "reason": "achemso is published on CTAN as achemso.dtx only; no compiled .cls is distributed, so it cannot be fetched and replaced safely.",
+          "recommendation": "unbundle",
+          "recommendationText": "Overleaf's TeX Live carries achemso. Deleting the project-local achemso.cls lets that system copy take over.",
+          "versionTracksPackage": true
+        }
+      ]
+    },
+    {
+      "id": "jmlr",
+      "name": "JMLR / PMLR (jmlr)",
+      "usedBy": [
+        "Journal of Machine Learning Research",
+        "PMLR proceedings volumes"
+      ],
+      "homepage": "https://ctan.org/pkg/jmlr",
+      "detect": {
+        "documentclass": [
+          "jmlr"
+        ],
+        "files": [
+          "jmlr.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "jmlr"
+        }
+      },
+      "files": [
+        {
+          "name": "jmlr.cls",
+          "action": "report-only",
+          "versionFrom": "provides",
+          "reason": "jmlr is published on CTAN as jmlr.dtx only; no compiled .cls is distributed, so it cannot be fetched and replaced safely.",
+          "recommendation": "unbundle",
+          "recommendationText": "Overleaf's TeX Live carries the jmlr class. Deleting the project-local jmlr.cls lets that system copy take over.",
+          "versionTracksPackage": true
+        }
+      ]
+    },
+    {
+      "id": "lni",
+      "name": "GI Lecture Notes in Informatics (lni)",
+      "usedBy": [
+        "German Informatics Society (GI) conferences"
+      ],
+      "homepage": "https://ctan.org/pkg/lni",
+      "detect": {
+        "documentclass": [
+          "lni"
+        ],
+        "files": [
+          "lni.cls"
+        ]
+      },
+      "upstream": {
+        "version": {
+          "kind": "ctan",
+          "pkg": "lni"
+        }
+      },
+      "files": [
+        {
+          "name": "lni.cls",
+          "action": "report-only",
+          "versionFrom": "provides",
+          "reason": "lni is published on CTAN as lni.dtx only; no compiled .cls is distributed, so it cannot be fetched and replaced safely.",
+          "recommendation": "unbundle",
+          "recommendationText": "Overleaf's TeX Live carries lni. Deleting the project-local lni.cls lets that system copy take over.",
           "versionTracksPackage": true
         }
       ]

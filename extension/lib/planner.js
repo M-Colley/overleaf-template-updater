@@ -49,20 +49,25 @@ OTU.planner = (function () {
     const hits = new Map();
 
     const classNames = new Set();
+    // ACL, CVPR and TMLR papers are \documentclass{article}; the template is
+    // the .sty they load, so packages are a detection signal in their own right.
+    const packageNames = new Set();
     for (const f of files) {
       if (f.ext === '.tex' && f.text) {
         const dc = latex.parseDocumentClass(f.text);
         if (dc) classNames.add(dc.name);
+        for (const p of latex.parseUsePackages(f.text)) packageNames.add(p);
       }
     }
 
     for (const t of registry.templates) {
       const byClass = (t.detect.documentclass || []).some((c) => classNames.has(c));
+      const byPackage = (t.detect.packages || []).some((p) => packageNames.has(p));
       const byFile = (t.detect.files || []).some((n) =>
         files.some((f) => f.base.toLowerCase() === n.toLowerCase())
       );
-      if (byClass || byFile) {
-        hits.set(t.id, { template: t, byClass, byFile });
+      if (byClass || byPackage || byFile) {
+        hits.set(t.id, { template: t, byClass, byPackage, byFile });
       }
     }
 
@@ -174,6 +179,9 @@ OTU.planner = (function () {
       for (const spec of template.files) {
         claimed.add(spec.name.toLowerCase());
         const local = findInProject(files, spec.name);
+        // Alternatives (IEEEtranN.bst beside IEEEtran.bst) and superseded files
+        // (aastex631.cls) are only news when a project actually carries them.
+        if (spec.onlyIfPresent && !local) continue;
 
         const item = {
           templateId: template.id,
@@ -250,6 +258,13 @@ OTU.planner = (function () {
         } else if (item.localSha && item.upstreamSha && item.localSha === item.upstreamSha) {
           item.status = 'current';
           item.statusReason = 'Byte-identical to upstream.';
+        } else if (spec.versionFrom === 'none' && item.localSha && item.upstreamSha) {
+          // Content is the only honest comparison for an unversioned file: it
+          // can say the two differ, never which one is newer.
+          item.status = 'unknown';
+          item.statusReason =
+            'Differs from upstream. This file carries no version marker, so ' +
+            'which copy is newer cannot be told — check the diff.';
         } else {
           const verdict = ver.assess(item.local, item.upstream);
           item.status = verdict.status;

@@ -284,6 +284,140 @@ function buildProjectZip() {
     check('cache is empty afterwards', empty.count, 0);
   }
 
+  /* -------------------------------------------- every source, for real */
+  // The registry is only as good as its sources. Each one is fetched through
+  // the worker's real code path -- mirror fallback, HTML rejection, expectName,
+  // the .bst completeness check -- and, where a file's version is meant to
+  // track its CTAN package, the version the extension reads out of the file is
+  // checked against CTAN's own package index.
+  if (!OFFLINE) {
+    console.log('\nevery registry source, through the real worker');
+    const call = (msg) => new Promise((res) => worker.__listener(msg, {}, res));
+    const sourceFailures = [];
+    const versionDrift = [];
+    let fetched = 0;
+
+    for (const t of registry.templates) {
+      const declared = t.upstream && t.upstream.version && t.upstream.version.kind === 'ctan'
+        ? await call({ type: 'ctanPackage', pkg: t.upstream.version.pkg }) : null;
+
+      for (const f of t.files) {
+        if (f.action !== 'replace') continue;
+        const shared = f.source.ref ? registry.sources[f.source.ref] : null;
+        const res = shared
+          ? await call({ type: 'fetchZipMember', url: shared.url, member: f.source.member,
+              versionFrom: f.versionFrom, expectName: f.expectName })
+          : await call({ type: 'fetchText', url: f.source.url, mirrors: f.source.mirrors,
+              versionFrom: f.versionFrom, expectName: f.expectName });
+        if (!res.ok) { sourceFailures.push(`${f.name}: ${res.error}`); continue; }
+        fetched++;
+
+        const want = declared && declared.ok && declared.version && declared.version.number;
+        if (f.versionTracksPackage && want &&
+            content.OTU.version.compare(res.version, want) !== 0) {
+          versionDrift.push(`${f.name}: file says v${res.version}, CTAN says v${want}`);
+        }
+      }
+    }
+    ok(`all ${fetched} replaceable files fetched and verified`, sourceFailures.length === 0,
+      sourceFailures.join('\n         '));
+    ok('every class that tracks its CTAN package reads as CTAN\'s version',
+      versionDrift.length === 0, versionDrift.join('\n         '));
+  }
+
+  /* ---------------------------------------- the newer detection paths */
+  const fx = require('./fixtures');
+  const zipOf = (name, entries) => {
+    const buf = fs.readFileSync(fx.buildZip(name, entries));
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  };
+  const scanOf = async (zip) => makeContent(worker, zip).OTU.planner.scan(() => {});
+  const itemOf = (plan, name) => plan.items.find((i) => i.name === name);
+
+  console.log('\nACL: a .sty template on \\documentclass{article}');
+  const aclZip = zipOf('project-acl.zip', {
+    'main.tex': '\\documentclass[11pt]{article}\n\\usepackage[review]{acl}\n' +
+      '\\begin{document}\nx\n\\end{document}\n',
+    'acl.sty': '% This is the LaTex style file for *ACL.\n% (a stale copy)\n',
+  });
+  const aclInv = await makeContent(worker, aclZip).OTU.planner.buildInventory();
+  const aclDet = content.OTU.planner.detectTemplates(aclInv, registry);
+  check('detected acl and nothing else', aclDet.hits.map((h) => h.template.id), ['acl']);
+  ok('detected by its \\usepackage, not only the bundled file', aclDet.hits[0].byPackage === true);
+
+  if (!OFFLINE) {
+    const acl = await scanOf(aclZip);
+    const sty = itemOf(acl, 'acl.sty');
+    check('unversioned acl.sty is "unknown", never claimed current or outdated', sty.status, 'unknown');
+    ok('and says why: there is no version to compare',
+      /no version marker/.test(sty.statusReason), sty.statusReason);
+    ok('offered, with its diff, but not pre-selected',
+      sty.applicable === true && sty.selected === false && !!sty.newText);
+  }
+
+  console.log('\nElsevier CAS: a macro-declared class, end to end');
+  const casZip = zipOf('project-cas.zip', {
+    'main.tex': '\\documentclass[a4paper,fleqn]{cas-dc}\n\\begin{document}\nx\n\\end{document}\n',
+    // The genuine header shape, at an older version.
+    'cas-dc.cls': '\\def\\RCSfile{cas-dc}%\n\\def\\RCSversion{2.3}%\n\\def\\RCSdate{2021/05/25}%\n' +
+      '\\ProvidesClass{\\RCSfile}[\\RCSdate, \\RCSversion: Formatting class\n' +
+      '   for CAS double column articles]\n',
+  });
+  if (!OFFLINE) {
+    const casPlan = await scanOf(casZip);
+    const dc = itemOf(casPlan, 'cas-dc.cls');
+    check('local version read through \\RCSversion', dc.local.version, '2.3');
+    // Without macro expansion the upstream file's name is "\RCSfile", and
+    // expectName would refuse the genuine cas-dc.cls as the wrong file.
+    ok('upstream cas-dc.cls passed expectName', !!dc.newText,
+      casPlan.warnings.join(' | '));
+    check('and is outdated against it', [dc.upstream.version, dc.status], ['2.4', 'outdated']);
+    ok('pre-selected', dc.selected === true);
+  }
+
+  console.log('\nelsarticle: the report-only class now has a readable version');
+  const elsZip = zipOf('project-els.zip', {
+    'main.tex': '\\documentclass[preprint,12pt]{elsarticle}\n\\begin{document}\n' +
+      '\\bibliographystyle{elsarticle-num}\n\\end{document}\n',
+    'elsarticle.cls': ' \\def\\RCSfile{elsarticle}%\n \\def\\RCSversion{3.1}%\n' +
+      ' \\def\\RCSdate{2018/01/19}%\n \\def\\@shortjid{elsarticle}\n' +
+      '\\ProvidesClass{\\@shortjid}[\\RCSdate, \\RCSversion: \\@journal]\n',
+    'elsarticle-num.bst': '%%\n%% This is file `elsarticle-num.bst\' (Version 1.9),\n%%\n',
+  });
+  if (!OFFLINE) {
+    const elsPlan = await scanOf(elsZip);
+    const cls = itemOf(elsPlan, 'elsarticle.cls');
+    // Before macro expansion this was always "unknown": [\RCSdate, \RCSversion: ...]
+    check('bundled elsarticle.cls reads as v3.1 and is outdated',
+      [cls.local.version, cls.status], ['3.1', 'outdated']);
+    ok('offered as an unbundle, never a replace',
+      cls.action === 'report-only' && cls.recommendation === 'unbundle' && cls.applicable);
+    const nb = itemOf(elsPlan, 'elsarticle-num.bst');
+    check('elsarticle-num.bst is replaceable and outdated',
+      [nb.local.version, nb.upstream.version, nb.status], ['1.9', '2.1', 'outdated']);
+    ok('alternative styles the project does not carry are not listed',
+      !itemOf(elsPlan, 'elsarticle-harv.bst') && !itemOf(elsPlan, 'elsarticle-num-names.bst'));
+  }
+
+  console.log('\nAASTeX 6.3.1: superseded by a differently named class');
+  const aasZip = zipOf('project-aas.zip', {
+    'main.tex': '\\documentclass[twocolumn]{aastex631}\n\\begin{document}\nx\n\\end{document}\n',
+    'aastex631.cls': fx.read('aastex631.cls'),
+  });
+  if (!OFFLINE) {
+    const aasPlan = await scanOf(aasZip);
+    const old = itemOf(aasPlan, 'aastex631.cls');
+    check('aastex631.cls reported outdated against AASTeX 7',
+      [old.local.version, old.status], ['6.3.1d', 'outdated']);
+    ok('but never offered for writing: there is no newer aastex631.cls',
+      old.applicable === false && old.selected === false);
+    ok('the reason names the successor', /aastex701/.test(old.reason || ''));
+    ok('the other superseded classes are not listed',
+      !itemOf(aasPlan, 'aastex632.cls') && !itemOf(aasPlan, 'aastex63.cls'));
+    ok('the current class is listed as available',
+      itemOf(aasPlan, 'aastex701.cls') && itemOf(aasPlan, 'aastex701.cls').status === 'absent');
+  }
+
   console.log('\nallowlist enforcement (registry data cannot widen network reach)');
   const denied = await new Promise((res) =>
     worker.__listener({ type: 'fetchText', url: 'https://evil.example.com/acmart.cls' }, {}, res));
@@ -293,6 +427,22 @@ function buildProjectZip() {
   const http = await new Promise((res) =>
     worker.__listener({ type: 'fetchText', url: 'http://ctan.org/x.cls' }, {}, res));
   check('plain HTTP refused even on an allowed host', http.ok, false);
+
+  // A .bst has no \Provides line for expectName to check. A mirror's truncated
+  // copy -- the failure actually observed with llncs.cls -- must still be caught.
+  console.log('\na truncated BibTeX style is refused');
+  const bstText = require('./fixtures').read('ACM-Reference-Format.bst');
+  const refuses = (text, url) => {
+    try { worker.assertUsable(text, url); return false; } catch { return true; }
+  };
+  ok('the complete style passes',
+    !refuses(bstText, 'https://ctan.org/x/ACM-Reference-Format.bst'));
+  ok('its first 4 KB is refused',
+    refuses(bstText.slice(0, 4096), 'https://ctan.org/x/ACM-Reference-Format.bst'));
+  ok('also when it came out of an archive',
+    refuses(bstText.slice(0, 4096), 'https://portalparts.acm.org/a.zip#a/ACM-Reference-Format.bst'));
+  ok('the check is specific to .bst files',
+    !refuses('% unversioned style\n', 'https://raw.githubusercontent.com/x/acl.sty'));
 
   const bogus = await new Promise((res) =>
     worker.__listener({ type: 'backupProject', projectId: '../../etc', filename: 'x.zip' }, {}, res));
