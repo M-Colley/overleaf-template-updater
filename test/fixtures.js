@@ -24,8 +24,25 @@ const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 
-const CTAN = 'https://ctan.math.illinois.edu/macros/latex/contrib/';
+/* CTAN mirrors, tried in order, as the registry's own sources are. A mirror
+ * can sit silent for one client while answering another instantly -- a CI job
+ * once spent its whole two-minute budget on Illinois while a parallel job got
+ * the same file at once -- so a dead connection or a stalled transfer costs
+ * seconds, and the next mirror is tried. */
+const CTAN_MIRRORS = [
+  'https://ctan.math.illinois.edu/',
+  'https://ftp.fau.de/ctan/',
+  'https://mirrors.ctan.org/',
+];
+const CTAN = CTAN_MIRRORS[0] + 'macros/latex/contrib/';
 const GH = 'https://raw.githubusercontent.com/';
+
+/** Every URL a fixture can come from: a CTAN path on each mirror, anything else as given. */
+function candidates(url) {
+  if (!url.startsWith(CTAN_MIRRORS[0])) return [url];
+  const rest = url.slice(CTAN_MIRRORS[0].length);
+  return CTAN_MIRRORS.map((m) => m + rest);
+}
 
 /** Third-party sources, fetched not vendored. */
 const REMOTE = {
@@ -53,7 +70,7 @@ const REMOTE = {
 
 /* Classes CTAN publishes only as .dtx. The built file Overleaf actually runs is
  * in TeX Live's package archive, so that is where the fixture comes from. */
-const TEXLIVE = 'https://ctan.math.illinois.edu/systems/texlive/tlnet/archive/';
+const TEXLIVE = CTAN_MIRRORS[0] + 'systems/texlive/tlnet/archive/';
 const REMOTE_TEXLIVE = {
   'elsarticle.cls': 'elsarticle', // \ProvidesClass{\@shortjid}[\RCSdate, \RCSversion: ...]
 };
@@ -62,11 +79,19 @@ const MIN_BYTES = 1024;
 
 /** Extract one built file from a TeX Live .tar.xz (Node has no xz; Python does). */
 function extractFromTeXLive(name, dest) {
+  const urls = candidates(TEXLIVE + REMOTE_TEXLIVE[name] + '.tar.xz');
   const py = [
     'import io, os, sys, tarfile, urllib.request',
-    `req = urllib.request.Request(${JSON.stringify(TEXLIVE + REMOTE_TEXLIVE[name] + '.tar.xz')},`,
-    `  headers={"User-Agent": ${JSON.stringify(BROWSER_UA)}})`,
-    'data = urllib.request.urlopen(req, timeout=120).read()',
+    'data = None',
+    `for url in ${JSON.stringify(urls)}:`,
+    `    req = urllib.request.Request(url, headers={"User-Agent": ${JSON.stringify(BROWSER_UA)}})`,
+    '    try:',
+    '        data = urllib.request.urlopen(req, timeout=30).read()',
+    '        break',
+    '    except Exception as e:',
+    '        print(f"  ({url}: {e}; trying the next mirror)", file=sys.stderr)',
+    'if data is None:',
+    '    sys.exit(1)',
     'with tarfile.open(fileobj=io.BytesIO(data), mode="r:xz") as t:',
     '    for m in t.getmembers():',
     `        if os.path.basename(m.name) == ${JSON.stringify(name)}:`,
@@ -79,20 +104,31 @@ function extractFromTeXLive(name, dest) {
 function download(name) {
   const dest = path.join(FIX, name);
   process.stdout.write(`  (fetching fixture ${name} …)\n`);
+  const usable = () => fs.existsSync(dest) && fs.statSync(dest).size >= MIN_BYTES;
   if (REMOTE_TEXLIVE[name]) {
-    extractFromTeXLive(name, dest);
+    try { extractFromTeXLive(name, dest); } catch { /* reported below */ }
   } else {
-    execFileSync('curl', [
-      '-sL', '--fail', '--max-time', '120',
-      '-H', `User-Agent: ${BROWSER_UA}`,
-      '-o', dest, REMOTE[name],
-    ], { stdio: ['ignore', 'ignore', 'inherit'] });
+    for (const url of candidates(REMOTE[name])) {
+      try {
+        execFileSync('curl', [
+          '-sL', '--fail', '--connect-timeout', '20', '--max-time', '120',
+          '--speed-limit', '1024', '--speed-time', '20',
+          '-H', `User-Agent: ${BROWSER_UA}`,
+          '-o', dest, url,
+        ], { stdio: ['ignore', 'ignore', 'inherit'] });
+        if (usable()) break;
+      } catch (err) {
+        // A stalled transfer leaves a partial file that could pass the size floor.
+        fs.rmSync(dest, { force: true });
+        process.stdout.write(`  (${url}: curl exit ${err.status}; trying the next mirror)\n`);
+      }
+    }
   }
-  const url = REMOTE[name] || TEXLIVE + REMOTE_TEXLIVE[name] + '.tar.xz';
+  const tried = candidates(REMOTE[name] || TEXLIVE + REMOTE_TEXLIVE[name] + '.tar.xz');
 
-  if (!fs.existsSync(dest) || fs.statSync(dest).size < MIN_BYTES) {
+  if (!usable()) {
     throw new Error(
-      `Could not fetch fixture "${name}" from ${url}.\n` +
+      `Could not fetch fixture "${name}" from ${tried.join(' or ')}.\n` +
       `These files are downloaded rather than committed for licensing reasons, ` +
       `so the test suite needs network access on first run.`
     );
