@@ -18,7 +18,7 @@ import {
   findCommand, findCommands, extractEnv, indexOfCommand,
   documentClass, packages, tidy, splitList,
 } from './latex.js';
-import { makeIR, makeAffiliation, preserve, TODO } from './ir.js';
+import { makeIR, makeAffiliation, preserveRest, retargetBibStyle, TODO } from './ir.js';
 import { reconcile } from './packages.js';
 
 export const id = 'acmart';
@@ -166,8 +166,9 @@ export function emit(ir, report) {
   }
   L.push(`\\documentclass[${opts.join(',')}]{acmart}`, '');
 
-  const { lines } = reconcile(ir, CLASS_PROVIDES, report);
+  const { lines } = reconcile(ir, CLASS_PROVIDES, report, { venue: id });
   if (lines.length) L.push(...lines, '');
+  const bibAt = L.length;
 
   // Venue block. ACM requires all of it for a real submission; anything the
   // source could not supply is scaffolded so the paper still compiles.
@@ -221,10 +222,16 @@ export function emit(ir, report) {
   if (ir.abstract) L.push('\\begin{abstract}', ir.abstract, '\\end{abstract}', '');
 
   // CCS concepts cannot be invented: ACM's taxonomy tool generates the XML.
-  if (ir.ccs.xml) {
-    L.push('\\begin{CCSXML}', ir.ccs.xml, '\\end{CCSXML}');
+  // LIPIcs uses the same taxonomy as bare \ccsdesc lines, which carry over.
+  if (ir.ccs.xml || ir.ccs.descs.length) {
+    if (ir.ccs.xml) L.push('\\begin{CCSXML}', ir.ccs.xml, '\\end{CCSXML}');
     for (const d of ir.ccs.descs) L.push(`\\ccsdesc[${d.weight || 500}]{${d.value}}`);
     L.push('');
+    if (!ir.ccs.xml) {
+      report.map('CCS concepts', 'the same ACM taxonomy, carried as \\ccsdesc lines');
+      report.warn('ACM also wants the CCSXML block for its metadata. Regenerate it ' +
+        'at https://dl.acm.org/ccs by picking the same concepts.');
+    }
   } else {
     L.push('%% CCS concepts are required by ACM. Generate them at');
     L.push('%% https://dl.acm.org/ccs and paste the CCSXML block here.');
@@ -239,22 +246,10 @@ export function emit(ir, report) {
   if (ir.teaser) L.push('\\begin{teaserfigure}', ir.teaser, '\\end{teaserfigure}', '');
 
   // Anything the source venue had that ACM has no concept of.
-  if (ir.highlights.length) {
-    L.push(preserve('Elsevier research highlights',
-      ir.highlights.map((h) => `\\item ${h}`).join('\n')), '');
-    report.drop('Research highlights', 'ACM templates have no highlights section');
-  }
-  if (ir.graphicalAbstract) {
-    L.push(preserve('Elsevier graphical abstract', ir.graphicalAbstract), '');
-    report.drop('Graphical abstract', 'ACM templates have no graphical abstract');
-  }
+  L.push(...preserveRest(ir, report, 'ACM', new Set(['ccs', 'teaser'])));
 
-  let body = ir.body;
-  if (ir.bib.style && ir.bib.style !== 'ACM-Reference-Format') {
-    body = body.replace(/(\\bibliographystyle\s*\{)[^}]*(\})/,
-      '$1ACM-Reference-Format$2');
-    report.map('Bibliography style', `${ir.bib.style} → ACM-Reference-Format`);
-  }
+  const { body, preambleLine } = retargetBibStyle(ir, report, 'ACM-Reference-Format');
+  if (preambleLine) L.splice(bibAt, 0, preambleLine, '');
 
   L.push(body.replace(/^\n+/, ''));
   L.push('\\end{document}');

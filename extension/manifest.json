@@ -60,8 +60,11 @@
         "lib/venues/packages.js",
         "lib/venues/acmart.js",
         "lib/venues/elsarticle.js",
+        "lib/venues/cas.js",
         "lib/venues/ieeetran.js",
-        "lib/venues/llncs.js"
+        "lib/venues/llncs.js",
+        "lib/venues/lipics.js",
+        "lib/venues/ceurart.js"
       ],
       "matches": [
         "https://www.overleaf.com/*",

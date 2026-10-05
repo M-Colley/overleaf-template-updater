@@ -58,6 +58,8 @@ OTU.convert = (function () {
     return {
       source,
       targets: source ? VENUES.filter((v) => v.id !== source.id) : [],
+      // Named from the registry itself, so the list can never go stale.
+      known: VENUES.map((v) => v.name),
     };
   }
 

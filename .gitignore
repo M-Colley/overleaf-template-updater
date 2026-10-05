@@ -12,4 +12,7 @@ test/fixtures/*
 !test/fixtures/paper-elsarticle.tex
 !test/fixtures/paper-ieeetran.tex
 !test/fixtures/paper-llncs.tex
+!test/fixtures/paper-cas.tex
+!test/fixtures/paper-lipics.tex
+!test/fixtures/paper-ceurart.tex
 test/fixtures/.venue-shift-tmp/

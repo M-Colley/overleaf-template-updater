@@ -8,13 +8,16 @@
 
 import * as acmart from './acmart.js';
 import * as elsarticle from './elsarticle.js';
+import * as cas from './cas.js';
 import * as ieeetran from './ieeetran.js';
 import * as llncs from './llncs.js';
+import * as lipics from './lipics.js';
+import * as ceurart from './ceurart.js';
 
 export { Report } from './ir.js';
 export { documentClass } from './latex.js';
 
-export const VENUES = [acmart, elsarticle, ieeetran, llncs];
+export const VENUES = [acmart, elsarticle, cas, ieeetran, llncs, lipics, ceurart];
 
 /** Which venue does this document use, by its \documentclass? */
 export function detectVenue(className) {

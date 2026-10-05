@@ -27,7 +27,9 @@ import {
   findCommand, findCommands, extractEnv,
   documentClass, packages, tidy, splitList,
 } from './latex.js';
-import { makeIR, makeAffiliation, preserve, TODO } from './ir.js';
+import {
+  makeIR, makeAffiliation, preserve, preserveRest, retargetBibStyle, TODO,
+} from './ir.js';
 import { reconcile } from './packages.js';
 
 export const id = 'ieeetran';
@@ -216,14 +218,18 @@ export function emit(ir, report) {
   }
   L.push(`\\documentclass[${opts.join(',')}]{IEEEtran}`, '');
 
-  const { lines } = reconcile(ir, CLASS_PROVIDES, report);
+  // IEEEtran.bst is numeric; natbib without `numbers` would stop on it.
+  const { lines } = reconcile(ir, CLASS_PROVIDES, report, { venue: id, options: { natbib: 'numbers' } });
   if (lines.length) L.push(...lines, '');
+  const bibAt = L.length;
 
   L.push('\\begin{document}', '');
   L.push(`\\title{${ir.title || TODO('title')}${
     ir.titleNote ? `\\thanks{${ir.titleNote}}` : ''}}`, '');
 
   if (ir.authors.length) {
+    // Preserved notes go after the \author group, never inside it.
+    const notes = [];
     L.push('\\author{');
     ir.authors.forEach((a, i) => {
       if (i) L.push('\\and');
@@ -241,15 +247,16 @@ export function emit(ir, report) {
       L.push(`\\IEEEauthorblockA{${parts.join('\\\\\n')}}`);
 
       if (a.orcid) {
-        report.drop(`ORCID for ${a.name}`,
+        report.drop(`ORCID for ${a.name} (${a.orcid})`,
           'IEEEtran has no ORCID command; IEEE collects it in the submission system');
       }
       if (a.note) {
+        notes.push(preserve(`Author note for ${a.name}`, a.note), '');
         report.drop(`Author note for ${a.name}`,
           'IEEEtran has no per-author note; consider \\thanks on the title');
       }
     });
-    L.push('}', '');
+    L.push('}', '', ...notes);
   }
 
   L.push('\\maketitle', '');
@@ -262,32 +269,10 @@ export function emit(ir, report) {
   }
 
   // Constructs IEEE has no concept of.
-  if (ir.ccs.xml || ir.ccs.descs.length) {
-    const block = [ir.ccs.xml ? `\\begin{CCSXML}\n${ir.ccs.xml}\n\\end{CCSXML}` : '',
-      ...ir.ccs.descs.map((d) => `\\ccsdesc[${d.weight || 500}]{${d.value}}`)]
-      .filter(Boolean).join('\n');
-    L.push(preserve('ACM CCS concepts', block), '');
-    report.drop('CCS concepts', 'an ACM classification with no IEEE equivalent');
-  }
-  if (ir.highlights.length) {
-    L.push(preserve('Elsevier research highlights',
-      ir.highlights.map((h) => `\\item ${h}`).join('\n')), '');
-    report.drop('Research highlights', 'IEEE templates have no highlights section');
-  }
-  if (ir.graphicalAbstract) {
-    L.push(preserve('Elsevier graphical abstract', ir.graphicalAbstract), '');
-    report.drop('Graphical abstract', 'IEEE templates have no graphical abstract');
-  }
-  if (ir.teaser) {
-    L.push(preserve('ACM teaser figure', ir.teaser), '');
-    report.drop('Teaser figure', 'no IEEEtran equivalent; reinsert as a normal figure');
-  }
+  L.push(...preserveRest(ir, report, 'IEEE', new Set(['titleNote'])));
 
-  let body = ir.body;
-  if (ir.bib.style && ir.bib.style !== 'IEEEtran') {
-    body = body.replace(/(\\bibliographystyle\s*\{)[^}]*(\})/, '$1IEEEtran$2');
-    report.map('Bibliography style', `${ir.bib.style} → IEEEtran`);
-  }
+  const { body, preambleLine } = retargetBibStyle(ir, report, 'IEEEtran');
+  if (preambleLine) L.splice(bibAt, 0, preambleLine, '');
 
   L.push(body.replace(/^\n+/, ''));
   L.push('\\end{document}');

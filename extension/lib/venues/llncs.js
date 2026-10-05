@@ -19,7 +19,7 @@
  *   \keywords{First keyword \and Second keyword}
  *   \end{abstract}
  *
- * Two things make llncs structurally unlike the other three venues:
+ * Two things make llncs structurally unlike most other venues:
  *
  *   1. All authors live in ONE \author{}, all institutions in ONE \institute{},
  *      each split by \and, and they are linked POSITIONALLY by \inst{n}. So a
@@ -34,7 +34,10 @@ import {
   findCommand, findCommands, extractEnv, documentClass, packages,
   tidy, splitList, splitOnCommand, stripCommand,
 } from './latex.js';
-import { makeIR, makeAffiliation, preserve, TODO } from './ir.js';
+import {
+  makeIR, makeAffiliation, preserveRest, retargetBibStyle, TODO, abbreviateName,
+  affiliationFromText, affiliationText, numberAffiliations,
+} from './ir.js';
 import { reconcile } from './packages.js';
 
 export const id = 'llncs';
@@ -52,28 +55,11 @@ const FORMATS = new Set(['runningheads', 'orivec', 'envcountsame', 'envcountchap
 
 /** "Princeton University, Princeton NJ 08544, USA" -> fields, best effort. */
 function parseInstitute(raw) {
-  const affiliation = makeAffiliation();
-
   const email = findCommand(raw, 'email', 1);
   let text = raw;
   if (email) text = stripCommand(text, 'email', 1);
   text = stripCommand(text, 'url', 1);
-  text = tidy(text.replace(/\\\\/g, ', ').replace(/\\(textit|textbf|emph)\s*\{([^}]*)\}/g, '$2'));
-
-  const parts = text.split(',').map((s) => tidy(s)).filter(Boolean);
-  if (parts.length >= 3) {
-    affiliation.country = parts[parts.length - 1];
-    affiliation.city = parts[parts.length - 2];
-    affiliation.organization = parts.slice(0, -2).join(', ');
-  } else if (parts.length === 2) {
-    affiliation.organization = parts[0];
-    affiliation.country = parts[1];
-  } else if (parts.length === 1) {
-    affiliation.organization = parts[0];
-  }
-  if (!affiliation.organization) affiliation.raw = text || null;
-
-  return { affiliation, email: email ? tidy(email.args[0]) : null };
+  return { affiliation: affiliationFromText(text), email: email ? tidy(email.args[0]) : null };
 }
 
 export function parse(text, report) {
@@ -114,6 +100,8 @@ export function parse(text, report) {
     for (const chunk of splitOnCommand(authorCmd.args[0], 'and')) {
       const orcid = findCommand(chunk, 'orcidID', 1);
       const inst = findCommand(chunk, 'inst', 1);
+      // Springer's documented per-author footnote: Name\inst{1}\fnmsep\thanks{..}
+      const thanks = findCommand(chunk, 'thanks', 1);
 
       const indices = inst
         ? splitList(inst.args[0], ',').map((n) => parseInt(n, 10)).filter(Number.isFinite)
@@ -121,6 +109,7 @@ export function parse(text, report) {
 
       let plain = stripCommand(chunk, 'orcidID', 1);
       plain = stripCommand(plain, 'inst', 1);
+      plain = stripCommand(plain, 'thanks', 1);
       plain = stripCommand(plain, 'fnmsep', 0);
       const nameText = tidy(plain.replace(/\\\\/g, ' '));
       if (!nameText) continue;
@@ -153,7 +142,7 @@ export function parse(text, report) {
         name: nameText,
         email,
         orcid: orcid ? tidy(orcid.args[0]) : null,
-        note: null,
+        note: thanks ? tidy(thanks.args[0]) : null,
         affiliation: primary ? primary.affiliation : makeAffiliation(),
       });
     }
@@ -201,22 +190,6 @@ export function parse(text, report) {
 
 /* -------------------------------------------------------------------- emit */
 
-/**
- * One institution, in llncs's comma-separated house style. The address is
- * keyed on its own — emails are attached afterwards, because two authors at
- * one institution are one \institute entry even when only one of them lists
- * an address, and keying on the pair would emit the institution twice.
- */
-function instituteAddress(f) {
-  const parts = [f.organization || f.raw || TODO('institution')];
-  if (f.department) parts.unshift(f.department);
-  if (f.addressline) parts.push(f.addressline);
-  if (f.city) parts.push([f.city, f.postcode].filter(Boolean).join(' '));
-  if (f.state) parts.push(f.state);
-  if (f.country) parts.push(f.country);
-  return parts.filter(Boolean).join(', ');
-}
-
 export function emit(ir, report) {
   const L = [];
 
@@ -229,8 +202,10 @@ export function emit(ir, report) {
   }
   L.push(`\\documentclass[${opts.join(',')}]{llncs}`, '');
 
-  const { lines } = reconcile(ir, CLASS_PROVIDES, report);
+  // splncs04 is numeric; natbib without `numbers` would stop on it.
+  const { lines } = reconcile(ir, CLASS_PROVIDES, report, { venue: id, options: { natbib: 'numbers' } });
   if (lines.length) L.push(...lines, '');
+  const bibAt = L.length;
 
   L.push('\\begin{document}', '');
   L.push(`\\title{${ir.title || TODO('title')}${
@@ -239,39 +214,34 @@ export function emit(ir, report) {
   L.push('');
 
   // llncs references affiliations by index, so identical ones are written once
-  // and shared. Deduplicate on the address, gathering each institution's email
-  // addresses as we go, then renumber.
-  const addresses = [];
-  const indexFor = new Map();
-  const emailsFor = new Map();
+  // and shared. The address is keyed on its own and emails are attached
+  // afterwards: two authors at one institution are one \institute entry even
+  // when only one of them lists an address, and keying on the pair would emit
+  // the institution twice.
+  const { list, labelOf } = numberAffiliations(ir.authors);
+  const emailsFor = list.map(() => []);
   for (const a of ir.authors) {
-    const addr = instituteAddress(a.affiliation);
-    if (!indexFor.has(addr)) {
-      addresses.push(addr);
-      indexFor.set(addr, addresses.length);
-      emailsFor.set(addr, []);
-    }
-    if (a.email && !emailsFor.get(addr).includes(a.email)) {
-      emailsFor.get(addr).push(a.email);
-    }
+    const mails = emailsFor[labelOf(a) - 1];
+    if (a.email && !mails.includes(a.email)) mails.push(a.email);
   }
-  const instLines = addresses.map((addr) => {
-    const mails = emailsFor.get(addr);
-    return mails.length ? `${addr}\\\\\n\\email{${mails.join(', ')}}` : addr;
+  const instLines = list.map((f, i) => {
+    const addr = affiliationText(f);
+    return emailsFor[i].length ? `${addr}\\\\\n\\email{${emailsFor[i].join(', ')}}` : addr;
   });
 
   if (ir.authors.length) {
-    const parts = ir.authors.map((a) => {
-      const idx = indexFor.get(instituteAddress(a.affiliation));
-      return `${a.name}\\inst{${idx}}` + (a.orcid ? `\\orcidID{${a.orcid}}` : '');
-    });
+    const parts = ir.authors.map((a) =>
+      `${a.name}\\inst{${labelOf(a)}}` +
+      (a.orcid ? `\\orcidID{${a.orcid}}` : '') +
+      (a.note ? `\\fnmsep\\thanks{${a.note}}` : ''));
     L.push('\\author{' + parts.join(' \\and\n        ') + '}');
+    if (ir.authors.some((a) => a.note)) {
+      report.map('Author notes', 'carried as \\fnmsep\\thanks, as Springer documents');
+    }
 
     // Springer wants an abbreviated running author list once there are several.
     if (ir.authors.length > 3) {
-      const first = ir.authors[0].name.split(/\s+/);
-      const initials = first.slice(0, -1).map((w) => w[0] + '.').join(' ');
-      L.push(`\\authorrunning{${initials} ${first[first.length - 1]} et al.}`);
+      L.push(`\\authorrunning{${abbreviateName(ir.authors[0].name)} et al.}`);
     }
     L.push('');
     L.push('\\institute{' + instLines.join(' \\and\n           ') + '}', '');
@@ -295,32 +265,10 @@ export function emit(ir, report) {
   }
 
   // Constructs llncs has no concept of.
-  if (ir.ccs.xml || ir.ccs.descs.length) {
-    const block = [ir.ccs.xml ? `\\begin{CCSXML}\n${ir.ccs.xml}\n\\end{CCSXML}` : '',
-      ...ir.ccs.descs.map((d) => `\\ccsdesc[${d.weight || 500}]{${d.value}}`)]
-      .filter(Boolean).join('\n');
-    L.push(preserve('ACM CCS concepts', block), '');
-    report.drop('CCS concepts', 'an ACM classification with no Springer equivalent');
-  }
-  if (ir.highlights.length) {
-    L.push(preserve('Elsevier research highlights',
-      ir.highlights.map((h) => `\\item ${h}`).join('\n')), '');
-    report.drop('Research highlights', 'llncs has no highlights section');
-  }
-  if (ir.graphicalAbstract) {
-    L.push(preserve('Elsevier graphical abstract', ir.graphicalAbstract), '');
-    report.drop('Graphical abstract', 'llncs has no graphical abstract');
-  }
-  if (ir.teaser) {
-    L.push(preserve('ACM teaser figure', ir.teaser), '');
-    report.drop('Teaser figure', 'no llncs equivalent; reinsert as a normal figure');
-  }
+  L.push(...preserveRest(ir, report, 'Springer', new Set(['titleNote'])));
 
-  let body = ir.body;
-  if (ir.bib.style && ir.bib.style !== 'splncs04') {
-    body = body.replace(/(\\bibliographystyle\s*\{)[^}]*(\})/, '$1splncs04$2');
-    report.map('Bibliography style', `${ir.bib.style} → splncs04`);
-  }
+  const { body, preambleLine } = retargetBibStyle(ir, report, 'splncs04');
+  if (preambleLine) L.splice(bibAt, 0, preambleLine, '');
 
   L.push(body.replace(/^\n+/, ''));
   L.push('\\end{document}');

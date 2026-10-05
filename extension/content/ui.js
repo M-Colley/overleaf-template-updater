@@ -485,7 +485,7 @@ OTU.ui = (function () {
     if (!s.source) {
       parts.push(
         `<div class="otu-warn"><code>\\documentclass{${esc(s.className || '?')}}</code> ` +
-        `is not a venue this tool knows. Supported: acmart, elsarticle, IEEEtran.</div>`
+        `is not a venue this tool knows. Supported: ${esc((s.known || []).join('; '))}.</div>`
       );
       body().innerHTML = parts.join('');
       wireConvert(s);

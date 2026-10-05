@@ -112,7 +112,7 @@ OTU.content = (function () {
   function freshConvertState() {
     return {
       entries: null, selectedPath: null, className: null,
-      source: null, targets: [], targetId: null,
+      source: null, targets: [], known: [], targetId: null,
       result: null, error: null, exists: false,
     };
   }
@@ -167,9 +167,10 @@ OTU.content = (function () {
     conv.targetId = null;
     conv.exists = false;
 
-    const { source, targets } = await OTU.convert.targetsFor(entry.className);
+    const { source, targets, known } = await OTU.convert.targetsFor(entry.className);
     conv.source = source;
     conv.targets = targets;
+    conv.known = known;
     OTU.ui.renderConvert(conv);
   }
 

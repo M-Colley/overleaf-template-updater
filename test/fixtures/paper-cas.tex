@@ -1,0 +1,96 @@
+%% A realistic Elsevier CAS manuscript, shaped like the front matter in
+%% Elsevier's elsdoc-cas.tex. Used to test venue-shift; not a real paper.
+\documentclass[a4paper,fleqn]{cas-dc}
+
+\usepackage[authoryear]{natbib}
+\usepackage{pgfplots}
+
+\begin{document}
+
+\shorttitle{Trust Calibration in Automated Driving}
+\shortauthors{M. Colley and J. Doe}
+
+\title [mode = title]{Trust Calibration in Highly Automated Driving}
+\tnotemark[1]
+\tnotetext[1]{This work was funded by the German Research Foundation.}
+
+\author[1]{Mark Colley}[orcid=0000-0001-5207-5029]
+\cormark[1]
+\ead{mark.colley@uni-ulm.de}
+\credit{Conceptualization, Methodology, Writing - original draft}
+
+\author[2]{Jane Doe}
+\ead{jane.doe@example.edu}
+\ead[url]{https://example.edu/~jdoe}
+\credit{Formal analysis, Writing - review \& editing}
+
+\affiliation[1]{organization={Institute of Media Informatics, Ulm University},
+                addressline={James-Franck-Ring},
+                city={Ulm},
+                postcode={89081},
+                country={Germany}}
+
+\affiliation[2]{organization={Example University},
+                city={Boston},
+                state={Massachusetts},
+                country={USA}}
+
+\cortext[1]{Corresponding author.}
+
+\begin{abstract}
+Automated vehicles must communicate their intent to build appropriate trust.
+We report a within-subjects study with 24 participants examining how takeover
+requests shape trust over repeated exposure.
+\end{abstract}
+
+\begin{highlights}
+\item Trust in automated vehicles develops across repeated takeovers.
+\item Takeover requests shape trust calibration.
+\item A within-subjects study with 24 participants.
+\end{highlights}
+
+\begin{keywords}
+automated driving \sep trust \sep takeover request \sep user study
+\end{keywords}
+
+\maketitle
+
+\section{Introduction}
+Trust in automated vehicles is neither uniformly good nor uniformly
+bad~\citep{lee2004trust}. We examine how it develops across repeated takeovers.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/apparatus}
+  \caption{The driving simulator used in the study.}
+  \label{fig:apparatus}
+\end{figure}
+
+\section{Method}
+We ran a within-subjects experiment with 24 participants.
+
+\begin{table}[t]
+  \caption{Participant demographics.}
+  \label{tab:demographics}
+  \begin{tabular}{lr}
+    \toprule
+    Measure & Value \\
+    \midrule
+    Participants & 24 \\
+    Mean age & 27.4 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Results}
+Trust increased over exposure, $F(2,46) = 8.1$, $p < .001$.
+
+\section{Conclusion}
+Repeated exposure calibrates trust.
+
+\printcredits
+
+\bibliographystyle{cas-model2-names}
+\bibliography{references}
+
+\end{document}

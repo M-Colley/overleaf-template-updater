@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-/* Tests for venue-shift: the acmart <-> elsarticle conversion.
+/* Tests for venue-shift: conversion between every pair of venue templates.
  *
  * The properties that matter most are the safety ones -- the input is never
  * modified, and the body is carried across byte-for-byte apart from the single
- * \bibliographystyle substitution. Everything else is a mapping detail. */
+ * \bibliographystyle substitution. Everything else is a mapping detail. Those
+ * properties are asserted for every one of the 42 directions, not a sample. */
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -21,6 +22,11 @@ import * as acmart from '../extension/lib/venues/acmart.js';
 import * as elsarticle from '../extension/lib/venues/elsarticle.js';
 import * as ieeetran from '../extension/lib/venues/ieeetran.js';
 import * as llncs from '../extension/lib/venues/llncs.js';
+import * as cas from '../extension/lib/venues/cas.js';
+import * as lipics from '../extension/lib/venues/lipics.js';
+import * as ceurart from '../extension/lib/venues/ceurart.js';
+import { VENUES, detectVenue } from '../extension/lib/venues/index.js';
+import { affiliationFromText, keyValues, orcidId } from '../extension/lib/venues/ir.js';
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -41,17 +47,30 @@ const convert = (from, to, text) => {
   return { out: to.emit(ir, report), ir, report };
 };
 
-/** The body, defined the same way for either template. */
+/**
+ * The body, defined the same way for every template: from the first section to
+ * the bibliography. LIPIcs declares \bibliographystyle in the preamble, so the
+ * body ends at whichever bibliography command comes first after the section.
+ */
 function bodyOf(text) {
   const i = text.indexOf('\\section{Introduction}');
-  const j = text.indexOf('\\bibliographystyle');
-  return i >= 0 && j > i ? text.slice(i, j) : null;
+  if (i < 0) return null;
+  const j = text.slice(i).search(/\\bibliography(style)?\s*\{/);
+  return j > 0 ? text.slice(i, i + j) : null;
 }
 
 const ACM = readFileSync(join(FIX, 'paper-acmart.tex'), 'utf8');
 const ELS = readFileSync(join(FIX, 'paper-elsarticle.tex'), 'utf8');
 const IEEE = readFileSync(join(FIX, 'paper-ieeetran.tex'), 'utf8');
 const LLNCS = readFileSync(join(FIX, 'paper-llncs.tex'), 'utf8');
+const CAS = readFileSync(join(FIX, 'paper-cas.tex'), 'utf8');
+const LIPICS = readFileSync(join(FIX, 'paper-lipics.tex'), 'utf8');
+const CEUR = readFileSync(join(FIX, 'paper-ceurart.tex'), 'utf8');
+
+const SOURCES = {
+  acmart: ACM, elsarticle: ELS, ieeetran: IEEE, llncs: LLNCS,
+  cas: CAS, lipics: LIPICS, ceurart: CEUR,
+};
 
 /* ------------------------------------------------------------------- latex */
 group('latex.mjs — brace-aware reading');
@@ -320,6 +339,213 @@ check('keywords survive', rt.ir.keywords,
 check('affiliation survives',
   rt.ir.authors[0].affiliation.organization, 'Institute of Media Informatics, Ulm University');
 check('body survives both hops', bodyOf(rt.out), bodyOf(ACM));
+
+/* ------------------------------------------------------------- Elsevier CAS */
+group('cas -> parse');
+const c2a = convert(cas, acmart, CAS);
+check('title, with the alternate-title optional argument skipped', c2a.ir.title,
+  'Trust Calibration in Highly Automated Driving');
+check('\\tnotetext is the title note', c2a.ir.titleNote,
+  'This work was funded by the German Research Foundation.');
+check('authors linked to labelled affiliations',
+  c2a.ir.authors.map((a) => [a.name, a.affiliation.organization]),
+  [['Mark Colley', 'Institute of Media Informatics, Ulm University'],
+   ['Jane Doe', 'Example University']]);
+check('ORCID read from the trailing key list', c2a.ir.authors[0].orcid, '0000-0001-5207-5029');
+check('\\cormark[1] resolved to its \\cortext', c2a.ir.authors[0].note, 'Corresponding author.');
+check('\\ead read, \\ead[url] ignored', c2a.ir.authors.map((a) => a.email),
+  ['mark.colley@uni-ulm.de', 'jane.doe@example.edu']);
+check('postcode and street parsed', [c2a.ir.authors[0].affiliation.postcode,
+  c2a.ir.authors[0].affiliation.addressline], ['89081', 'James-Franck-Ring']);
+check('keywords environment (plural, unlike elsarticle)', c2a.ir.keywords,
+  ['automated driving', 'trust', 'takeover request', 'user study']);
+check('highlights', c2a.ir.highlights.length, 3);
+ok('CRediT statements captured', /Conceptualization/.test(c2a.ir.authors[0].credit || ''));
+
+group('cas -> acmart');
+ok('ORCID and note carried to acmart',
+  c2a.out.includes('\\orcid{0000-0001-5207-5029}') && c2a.out.includes('\\authornote{Corresponding author.}'));
+ok('CRediT preserved as a comment, not lost',
+  c2a.out.includes('% [venue-shift] CRediT statement for Mark Colley'));
+ok('\\printcredits in the body kept compiling', c2a.out.includes('\\providecommand{\\printcredits}{}'));
+check('body carried byte-for-byte', bodyOf(c2a.out), bodyOf(CAS));
+
+group('acmart -> cas');
+const a2c = convert(acmart, cas, ACM);
+ok('emits cas-dc', /\\documentclass\[[^\]]*\]\{cas-dc\}/.test(a2c.out));
+ok('ORCID goes in the CAS key list', a2c.out.includes('\\author[1]{Mark Colley}[orcid=0000-0001-5207-5029]'));
+ok('a "corresponding" note becomes \\cormark + \\cortext',
+  a2c.out.includes('\\cormark[1]') && a2c.out.includes('\\cortext[1]{Corresponding author.}'));
+ok('affiliation as labelled key=value', /\\affiliation\[1\]\{organization=\{Institute of Media/.test(a2c.out));
+ok('keywords environment with \\sep', a2c.out.includes('\\begin{keywords}\nautomated driving \\sep trust'));
+// CAS loads no natbib, but its bibliography style is a natbib one.
+ok('natbib added, author-year', a2c.out.includes('\\usepackage[authoryear]{natbib}'));
+ok('booktabs dropped (cas-dc loads it)', !/^\\usepackage(\[[^\]]*\])?\{booktabs\}/m.test(a2c.out));
+ok('bibliography style is the CAS bundle\'s', a2c.out.includes('\\bibliographystyle{cas-model2-names}'));
+ok('the author-year switch is flagged', a2c.report.warnings.some((w) => /author-year/.test(w)));
+ok('highlights scaffolded', a2c.report.todo.some((t) => /highlights/i.test(t.what)));
+check('body carried byte-for-byte', bodyOf(a2c.out), bodyOf(ACM));
+
+group('cas <-> elsarticle keep Elsevier furniture');
+const c2e = convert(cas, elsarticle, CAS);
+ok('highlights carried, not scaffolded', c2e.out.includes('\\item Takeover requests shape trust calibration.') &&
+  !c2e.report.todo.some((t) => /highlights/i.test(t.what)));
+ok('the title note becomes \\tnoteref + \\tnotetext',
+  c2e.out.includes('\\tnoteref{t1}') && c2e.out.includes('\\tnotetext[t1]{This work was funded'));
+const e2c = convert(elsarticle, cas, c2e.out);
+check('and parses back', e2c.ir.titleNote, 'This work was funded by the German Research Foundation.');
+
+/* ------------------------------------------------------------------ LIPIcs */
+group('lipics -> parse');
+const p2a = convert(lipics, acmart, LIPICS);
+check('title and running title from the preamble',
+  [p2a.ir.title, p2a.ir.shortTitle],
+  ['Trust Calibration in Highly Automated Driving', 'Trust Calibration in Automated Driving']);
+check('five-argument \\author', p2a.ir.authors.map((a) => a.name), ['Mark Colley', 'Jane Doe', 'Alex Roe']);
+check('ORCID out of its URL form', p2a.ir.authors[0].orcid, '0000-0001-5207-5029');
+check('a \\footnote on the name is the author note', p2a.ir.authors[0].note, 'Corresponding author.');
+check('the homepage after \\and is not taken for an affiliation',
+  p2a.ir.authors[1].affiliation.organization, 'Department of Computer Science, Example University');
+check('affiliation split into fields', [p2a.ir.authors[0].affiliation.city,
+  p2a.ir.authors[0].affiliation.country], ['Ulm', 'Germany']);
+check('empty email argument is no email', p2a.ir.authors[2].email, null);
+check('\\ccsdesc read', p2a.ir.ccs.descs, [{ weight: '500',
+  value: 'Human-centered computing~Human computer interaction (HCI)' }]);
+check('\\funding is the title note', p2a.ir.titleNote, 'This work was funded by the German Research Foundation.');
+check('\\acknowledgements captured', p2a.ir.acknowledgements, 'We thank all participants.');
+ok('abstract lifted out of the body', /within-subjects/.test(p2a.ir.abstract || '') &&
+  !p2a.ir.body.includes('\\begin{abstract}'));
+check('style read from the preamble', p2a.ir.bib.style, 'plainurl');
+ok('editor-only volume metadata reported', p2a.report.dropped.some((d) => /volume metadata/.test(d.what)));
+
+group('lipics -> acmart');
+// The bug this guards: LIPIcs declares its style in the preamble, so the body
+// has no \bibliographystyle to swap -- the output would have none at all.
+check('exactly one \\bibliographystyle, the target\'s',
+  p2a.out.match(/\\bibliographystyle\{[^}]*\}/g), ['\\bibliographystyle{ACM-Reference-Format}']);
+ok('CCS concepts carried as live \\ccsdesc, not a comment',
+  /^\\ccsdesc\[500\]\{Human-centered computing~Human computer interaction \(HCI\)\}$/m.test(p2a.out));
+ok('and the missing CCSXML is flagged, not invented', p2a.report.warnings.some((w) => /CCSXML/.test(w)) &&
+  !p2a.out.includes('\\begin{CCSXML}'));
+ok('front-matter acknowledgements preserved for the body',
+  p2a.out.includes('% [venue-shift] Acknowledgements (from the front matter)'));
+check('body carried byte-for-byte', bodyOf(p2a.out), bodyOf(LIPICS));
+
+group('acmart -> lipics');
+const a2p = convert(acmart, lipics, ACM);
+ok('one \\author per author, five arguments',
+  a2p.out.includes('\\author{Mark Colley\\footnote{Corresponding author.}}{Institute of Media Informatics, Ulm University, Ulm, Baden-W\\"urttemberg, Germany}{mark.colley@uni-ulm.de}{https://orcid.org/0000-0001-5207-5029}{}'),
+  a2p.out.match(/\\author\{.*$/m)?.[0]);
+ok('\\authorrunning and \\Copyright derived',
+  a2p.out.includes('\\authorrunning{M. Colley and J. Doe}') && a2p.out.includes('\\Copyright{Mark Colley and Jane Doe}'));
+ok('CCS concepts carried as \\ccsdesc', a2p.out.includes('\\ccsdesc[500]{Human-centered computing~'));
+// The body's own \bibliographystyle is swapped in place -- the one body edit.
+check('the body\'s style line now says plainurl, the style LIPIcs mandates',
+  a2p.out.match(/\\bibliographystyle\{[^}]*\}/g), ['\\bibliographystyle{plainurl}']);
+ok('ACM\'s `anonymous` option carries (LIPIcs has one too)',
+  /\{lipics-v2021\}/.test(convert(acmart, lipics,
+    ACM.replace('[sigconf]', '[sigconf,anonymous]')).out.split('\n')[0]) &&
+  /anonymous/.test(convert(acmart, lipics, ACM.replace('[sigconf]', '[sigconf,anonymous]')).out.split('\n')[0]));
+ok('the \\Description in the body kept compiling', a2p.out.includes('\\providecommand{\\Description}'));
+check('body carried byte-for-byte', bodyOf(a2p.out), bodyOf(ACM));
+
+/* ------------------------------------------------------------------ CEUR-WS */
+group('ceurart -> parse');
+const u2i = convert(ceurart, ieeetran, CEUR);
+check('authors, with email from the key list', u2i.ir.authors.map((a) => [a.name, a.email]),
+  [['Mark Colley', 'mark.colley@uni-ulm.de'], ['Jane Doe', 'jane.doe@example.edu']]);
+check('a key list opened with "[%" still parses', u2i.ir.authors[0].orcid, '0000-0001-5207-5029');
+check('free-text address: a bare postcode is not the city',
+  [u2i.ir.authors[0].affiliation.city, u2i.ir.authors[0].affiliation.postcode,
+   u2i.ir.authors[0].affiliation.country], ['Ulm', '89081', 'Germany']);
+check('\\tnotetext is the title note', u2i.ir.titleNote, 'This work was funded by the German Research Foundation.');
+
+group('ceurart -> ieeetran');
+// The bug this guards: ceurart (like acmart) loads natbib itself, so a body
+// using \citet never declared it -- and IEEEtran does not provide it.
+ok('natbib added for the body\'s \\citet, in numbers mode',
+  u2i.out.includes('\\usepackage[numbers]{natbib}'));
+ok('\\citet is untouched in the body', u2i.out.includes('as \\citet{lee2004trust} argue'));
+ok('title note becomes \\thanks', u2i.out.includes('\\thanks{This work was funded'));
+check('body carried byte-for-byte', bodyOf(u2i.out), bodyOf(CEUR));
+ok('natbib is not added where the target loads it',
+  !convert(ceurart, acmart, CEUR).out.includes('{natbib}'));
+
+group('acmart -> ceurart');
+const a2u = convert(acmart, ceurart, ACM);
+ok('emits ceurart with no options', a2u.out.startsWith('\\documentclass{ceurart}'));
+ok('authors with a key list and labelled \\address',
+  a2u.out.includes('\\author[1]{Mark Colley}[orcid=0000-0001-5207-5029, email=mark.colley@uni-ulm.de]') &&
+  a2u.out.includes('\\address[1]{Institute of Media Informatics, Ulm University, Ulm, Baden-W\\"urttemberg, Germany}'));
+ok('CC BY copyright clause written', a2u.out.includes('\\copyrightclause{Copyright for this paper by its authors.'));
+ok('the workshop is a TODO, not the CHI conference',
+  /\\conference\{TODO-venue-shift/.test(a2u.out) && !/\\conference\{CHI/.test(a2u.out));
+ok('the CEUR-WS GenAI declaration is flagged when the body lacks one',
+  a2u.report.todo.some((t) => /Generative AI/.test(t.what)) && /TODO-venue-shift: add a \\section\*\{Declaration/.test(a2u.out));
+ok('but not when the body already has it',
+  !convert(lipics, ceurart, LIPICS.replace('\\bibliography{references}',
+    '\\section*{Declaration on Generative AI}\nNone used.\n\n\\bibliography{references}'))
+    .report.todo.some((t) => /Generative AI/.test(t.what)));
+ok('bibliography style switched to the class default',
+  a2u.out.includes('\\bibliographystyle{elsarticle-num-names}'));
+check('body carried byte-for-byte', bodyOf(a2u.out), bodyOf(ACM));
+
+/* ------------------------------------------------- llncs per-author notes */
+group('llncs per-author \\thanks');
+const a2l2 = convert(acmart, llncs, ACM);
+ok('acmart\'s \\authornote becomes Springer\'s \\fnmsep\\thanks',
+  a2l2.out.includes('Mark Colley\\inst{1}\\orcidID{0000-0001-5207-5029}\\fnmsep\\thanks{Corresponding author.}'));
+check('and parses back as the author note', convert(llncs, acmart, a2l2.out).ir.authors[0].note,
+  'Corresponding author.');
+
+/* ---------------------------------------------------- shared helpers */
+group('free-text affiliations, keys and ORCIDs');
+check('city/country split',
+  [affiliationFromText('Ulm University, Ulm, Germany').organization,
+   affiliationFromText('Ulm University, Ulm, Germany').city], ['Ulm University', 'Ulm']);
+check('two parts: organisation and country',
+  affiliationFromText('Example University, USA').country, 'USA');
+check('key list with braces and a comment',
+  keyValues('%\norcid=0000-0002-1825-0097,\nurl={https://a.b/c,d},\n'),
+  { orcid: '0000-0002-1825-0097', url: 'https://a.b/c,d' });
+check('ORCID from a URL', orcidId('https://orcid.org/0000-0002-1825-009X'), '0000-0002-1825-009X');
+check('LIPIcs placeholder is no ORCID', orcidId('[orcid]'), null);
+
+/* ------------------------------------------------------------- the matrix */
+// Every direction, not a sample. These are the promises the README makes.
+group(`every direction (${VENUES.length} venues, ${VENUES.length * (VENUES.length - 1)} conversions)`);
+check('every fixture is detected as its own venue',
+  Object.entries(SOURCES).map(([id, text]) => detectVenue(latex.documentClass(text).name)?.id),
+  Object.keys(SOURCES));
+
+const broken = { body: [], bib: [], authors: [], title: [], note: [], todo: [], junk: [] };
+let directions = 0;
+for (const from of VENUES) {
+  for (const to of VENUES) {
+    if (from.id === to.id) continue;
+    directions++;
+    const label = `${from.id}->${to.id}`;
+    const r = convert(from, to, SOURCES[from.id]);
+
+    if (bodyOf(r.out) !== bodyOf(SOURCES[from.id])) broken.body.push(label);
+    if ((r.out.match(/^[^%\n]*\\bibliographystyle\{/gm) || []).length !== 1) broken.bib.push(label);
+    if (!r.ir.authors.every((a) => r.out.includes(a.name))) broken.authors.push(label);
+    if (!r.out.includes(r.ir.title)) broken.title.push(label);
+    // The funding note on the title: carried, or preserved -- never dropped.
+    if (r.ir.titleNote && !r.out.includes(r.ir.titleNote)) broken.note.push(label);
+    // "Each is marked TODO-venue-shift in the converted file", and vice versa.
+    if (r.report.todo.length > 0 !== r.out.includes('TODO-venue-shift')) broken.todo.push(label);
+    if (/undefined|\[object Object\]|\bnull\b/.test(r.out)) broken.junk.push(label);
+  }
+}
+check('all directions ran', directions, VENUES.length * (VENUES.length - 1));
+check('body byte-identical in every direction', broken.body, []);
+check('exactly one live \\bibliographystyle in every output', broken.bib, []);
+check('every author carried in every direction', broken.authors, []);
+check('the title carried in every direction', broken.title, []);
+check('a title note survives every direction', broken.note, []);
+check('TODO markers and the checklist agree in every direction', broken.todo, []);
+check('no undefined/null leaks into any output', broken.junk, []);
 
 /* ---------------------------------------------------------------- CLI safety */
 group('CLI — never touches the input');

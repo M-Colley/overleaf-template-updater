@@ -1,0 +1,88 @@
+%% A realistic CEUR-WS workshop paper, shaped like the ceurart class's own
+%% sample__1col.tex. Used to test venue-shift; not a real paper.
+\documentclass{ceurart}
+
+\usepackage{listings}
+
+\begin{document}
+
+\copyrightyear{2026}
+\copyrightclause{Copyright for this paper by its authors.
+  Use permitted under Creative Commons License Attribution 4.0 International (CC BY 4.0).}
+
+\conference{AutoTrust'26: Workshop on Trust in Automation, June 07--11, 2026, Ulm, Germany}
+
+\title{Trust Calibration in Highly Automated Driving}
+\tnotemark[1]
+\tnotetext[1]{This work was funded by the German Research Foundation.}
+
+\author[1]{Mark Colley}[%
+orcid=0000-0001-5207-5029,
+email=mark.colley@uni-ulm.de,
+url=https://www.uni-ulm.de/,
+]
+\cormark[1]
+\address[1]{Institute of Media Informatics, Ulm University, James-Franck-Ring, Ulm, 89081, Germany}
+
+\author[2]{Jane Doe}[%
+email=jane.doe@example.edu,
+]
+\address[2]{Example University, Boston, USA}
+
+\cortext[1]{Corresponding author.}
+
+\begin{abstract}
+  Automated vehicles must communicate their intent to build appropriate trust.
+  We report a within-subjects study with 24 participants examining how takeover
+  requests shape trust over repeated exposure.
+\end{abstract}
+
+\begin{keywords}
+  automated driving \sep
+  trust \sep
+  takeover request \sep
+  user study
+\end{keywords}
+
+\maketitle
+
+\section{Introduction}
+Trust in automated vehicles is neither uniformly good nor uniformly
+bad, as \citet{lee2004trust} argue. We examine how it develops across
+repeated takeovers.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/apparatus}
+  \caption{The driving simulator used in the study.}
+  \label{fig:apparatus}
+\end{figure}
+
+\section{Method}
+We ran a within-subjects experiment with 24 participants.
+
+\begin{table}[t]
+  \caption{Participant demographics.}
+  \label{tab:demographics}
+  \begin{tabular}{lr}
+    \toprule
+    Measure & Value \\
+    \midrule
+    Participants & 24 \\
+    Mean age & 27.4 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Results}
+Trust increased over exposure, $F(2,46) = 8.1$, $p < .001$.
+
+\section{Conclusion}
+Repeated exposure calibrates trust.
+
+\section*{Declaration on Generative AI}
+The author(s) have not employed any Generative AI tools.
+
+\bibliography{references}
+
+\end{document}

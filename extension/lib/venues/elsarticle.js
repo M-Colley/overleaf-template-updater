@@ -21,7 +21,9 @@ import {
   findCommand, findCommands, extractEnv,
   documentClass, packages, tidy, splitList,
 } from './latex.js';
-import { makeIR, makeAffiliation, preserve, TODO } from './ir.js';
+import {
+  makeIR, makeAffiliation, preserve, preserveRest, retargetBibStyle, TODO,
+} from './ir.js';
 import { reconcile } from './packages.js';
 
 export const id = 'elsarticle';
@@ -33,7 +35,7 @@ const CLASS_PROVIDES = new Set([
 ]);
 
 /** Elsevier ships three styles; numeric is the common default. */
-const BIB_STYLES = new Set(['elsarticle-num', 'elsarticle-harv', 'elsarticle-num-names']);
+export const BIB_STYLES = new Set(['elsarticle-num', 'elsarticle-harv', 'elsarticle-num-names']);
 
 /* ------------------------------------------------------------------- parse */
 
@@ -57,7 +59,10 @@ export function parse(text, report) {
   const front = fm ? fm.inner : afterBegin;
 
   const title = findCommand(front, 'title', 1);
-  if (title) ir.title = tidy(title.args[0]);
+  if (title) ir.title = tidy(title.args[0].replace(/\\tnoteref\s*\{[^}]*\}/g, ''));
+  // \title{..\tnoteref{t1}} + \tnotetext[t1]{..}: Elsevier's title footnote.
+  const tnote = findCommand(front, 'tnotetext', 1);
+  if (tnote) ir.titleNote = tidy(tnote.args[0]);
 
   // Authors: \author{Name} followed by \ead / \affiliation until the next one.
   const authorCmds = findCommands(front, 'author', 1);
@@ -125,6 +130,19 @@ export function parse(text, report) {
 
 /* -------------------------------------------------------------------- emit */
 
+/** Elsevier's key={value} affiliation fields, shared with the CAS templates. */
+export function affiliationPairs(f) {
+  const pairs = [];
+  if (f.organization || f.raw) pairs.push(`organization={${f.organization || f.raw}}`);
+  if (f.department) pairs.push(`department={${f.department}}`);
+  if (f.addressline) pairs.push(`addressline={${f.addressline}}`);
+  if (f.city) pairs.push(`city={${f.city}}`);
+  if (f.postcode) pairs.push(`postcode={${f.postcode}}`);
+  if (f.state) pairs.push(`state={${f.state}}`);
+  if (f.country) pairs.push(`country={${f.country}}`);
+  return pairs;
+}
+
 export function emit(ir, report) {
   const L = [];
   // acmart options (sigconf, review, anonymous...) mean nothing to elsarticle.
@@ -137,8 +155,9 @@ export function emit(ir, report) {
   }
   L.push(`\\documentclass[${opts.join(',')}]{elsarticle}`, '');
 
-  const { lines } = reconcile(ir, CLASS_PROVIDES, report);
+  const { lines } = reconcile(ir, CLASS_PROVIDES, report, { venue: id });
   if (lines.length) L.push(...lines, '');
+  const bibAt = L.length;
 
   L.push(`\\journal{${ir.meta.journal || TODO('target journal name')}}`);
   if (!ir.meta.journal) {
@@ -147,25 +166,22 @@ export function emit(ir, report) {
   L.push('');
 
   L.push('\\begin{document}', '', '\\begin{frontmatter}', '');
-  L.push(`\\title{${ir.title || TODO('title')}}`, '');
+  if (ir.titleNote) {
+    L.push(`\\title{${ir.title || TODO('title')}\\tnoteref{t1}}`);
+    L.push(`\\tnotetext[t1]{${ir.titleNote}}`, '');
+    report.map('Title note', 'carried as an Elsevier \\tnotetext');
+  } else {
+    L.push(`\\title{${ir.title || TODO('title')}}`, '');
+  }
 
   for (const a of ir.authors) {
     L.push(`\\author{${a.name}}`);
     if (a.email) L.push(`\\ead{${a.email}}`);
 
-    const f = a.affiliation;
-    const pairs = [];
-    if (f.organization || f.raw) pairs.push(`organization={${f.organization || f.raw}}`);
-    if (f.department) pairs.push(`department={${f.department}}`);
-    if (f.addressline) pairs.push(`addressline={${f.addressline}}`);
-    if (f.city) pairs.push(`city={${f.city}}`);
-    if (f.postcode) pairs.push(`postcode={${f.postcode}}`);
-    if (f.state) pairs.push(`state={${f.state}}`);
-    if (f.country) pairs.push(`country={${f.country}}`);
-    L.push('\\affiliation{' + pairs.join(',\n            ') + '}', '');
+    L.push('\\affiliation{' + affiliationPairs(a.affiliation).join(',\n            ') + '}', '');
 
     if (a.orcid) {
-      report.drop(`ORCID for ${a.name}`,
+      report.drop(`ORCID for ${a.name} (${a.orcid})`,
         'elsarticle has no ORCID command; Elsevier collects it in the submission system');
     }
     if (a.note) {
@@ -200,29 +216,15 @@ export function emit(ir, report) {
     report.map('Keywords', `comma-separated \\keywords → \\sep-separated keyword environment`);
   }
 
-  // CCS concepts are an ACM construct with no Elsevier counterpart.
-  if (ir.ccs.xml || ir.ccs.descs.length) {
-    const block = [ir.ccs.xml ? `\\begin{CCSXML}\n${ir.ccs.xml}\n\\end{CCSXML}` : '',
-      ...ir.ccs.descs.map((d) => `\\ccsdesc[${d.weight || 500}]{${d.value}}`)]
-      .filter(Boolean).join('\n');
-    L.push(preserve('ACM CCS concepts', block), '');
-    report.drop('CCS concepts', 'an ACM classification with no Elsevier equivalent');
-  }
+  // CCS concepts, a teaser figure and the like have no Elsevier counterpart.
+  L.push(...preserveRest(ir, report, 'Elsevier',
+    new Set(['titleNote', 'highlights', 'graphicalAbstract'])));
 
   L.push('\\end{frontmatter}', '');
 
-  if (ir.teaser) {
-    L.push(preserve('ACM teaser figure', ir.teaser), '');
-    report.drop('Teaser figure', 'elsarticle has no teaserfigure environment; ' +
-      'reinsert it as a normal figure if you want it');
-  }
-
-  let body = ir.body;
-  const target = 'elsarticle-num';
-  if (ir.bib.style && !BIB_STYLES.has(ir.bib.style)) {
-    body = body.replace(/(\\bibliographystyle\s*\{)[^}]*(\})/, `$1${target}$2`);
-    report.map('Bibliography style', `${ir.bib.style} → ${target}`);
-  }
+  const { body, preambleLine } =
+    retargetBibStyle(ir, report, 'elsarticle-num', [...BIB_STYLES]);
+  if (preambleLine) L.splice(bibAt, 0, preambleLine, '');
 
   L.push(body.replace(/^\n+/, ''));
   L.push('\\end{document}');

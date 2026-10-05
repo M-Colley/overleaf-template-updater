@@ -1,0 +1,89 @@
+%% A realistic LIPIcs paper, shaped like Dagstuhl's own
+%% lipics-v2021-sample-article.tex. Used to test venue-shift; not a real paper.
+\documentclass[a4paper,UKenglish,cleveref,autoref,thm-restate]{lipics-v2021}
+
+\usepackage{booktabs}
+
+\bibliographystyle{plainurl}% the mandatory bibstyle
+
+\title{Trust Calibration in Highly Automated Driving}
+\titlerunning{Trust Calibration in Automated Driving}
+
+\author{Mark Colley\footnote{Corresponding author.}}{Institute of Media Informatics, Ulm University, Ulm, Germany}{mark.colley@uni-ulm.de}{https://orcid.org/0000-0001-5207-5029}{}
+
+\author{Jane Doe}{Department of Computer Science, Example University, Boston, USA \and \url{https://example.edu/~jdoe}}{jane.doe@example.edu}{}{}
+
+\author{Alex Roe}{Institute of Media Informatics, Ulm University, Ulm, Germany}{}{}{}
+
+\authorrunning{M. Colley, J. Doe, and A. Roe}
+
+\Copyright{Mark Colley, Jane Doe, and Alex Roe}
+
+\ccsdesc[500]{Human-centered computing~Human computer interaction (HCI)}
+
+\keywords{automated driving, trust, takeover request, user study}
+
+\funding{This work was funded by the German Research Foundation.}
+
+\acknowledgements{We thank all participants.}
+
+%Editor-only macros:: begin (do not touch as author)%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\EventEditors{John Q. Open and Joan R. Access}
+\EventNoEds{2}
+\EventLongTitle{42nd Conference on Very Important Topics (CVIT 2016)}
+\EventShortTitle{CVIT 2016}
+\EventAcronym{CVIT}
+\EventYear{2016}
+\EventDate{December 24--27, 2016}
+\EventLocation{Little Whinging, United Kingdom}
+\EventLogo{}
+\SeriesVolume{42}
+\ArticleNo{23}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Automated vehicles must communicate their intent to build appropriate trust.
+We report a within-subjects study with 24 participants examining how takeover
+requests shape trust over repeated exposure.
+\end{abstract}
+
+\section{Introduction}
+Trust in automated vehicles is neither uniformly good nor uniformly
+bad~\cite{lee2004trust}. We examine how it develops across repeated takeovers.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figures/apparatus}
+  \caption{The driving simulator used in the study.}
+  \label{fig:apparatus}
+\end{figure}
+
+\section{Method}
+We ran a within-subjects experiment with 24 participants.
+
+\begin{table}[t]
+  \caption{Participant demographics.}
+  \label{tab:demographics}
+  \begin{tabular}{lr}
+    \toprule
+    Measure & Value \\
+    \midrule
+    Participants & 24 \\
+    Mean age & 27.4 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Results}
+Trust increased over exposure, $F(2,46) = 8.1$, $p < .001$.
+
+\section{Conclusion}
+Repeated exposure calibrates trust.
+
+\bibliography{references}
+
+\end{document}
