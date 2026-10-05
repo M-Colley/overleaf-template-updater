@@ -85,15 +85,30 @@ function curlToCache(url) {
 
   console.log(`  (downloading ${url.split('/').pop()} via curl -> ${path.basename(cache)})`);
   const part = cache + '.part';
-  const out = execFileSync('curl', ['-sL', '--max-time', '180', '-H', `User-Agent: ${BROWSER_UA}`,
-    '-D', '-', '-o', part, '-w', '%{http_code}', url], { encoding: 'utf8' });
-  const status = Number(out.slice(-3));
+  let out, curlExit = 0;
+  try {
+    out = execFileSync('curl', ['-sL', '--max-time', '180', '-H', `User-Agent: ${BROWSER_UA}`,
+      '-D', '-', '-o', part, '-w', '%{http_code}', url], { encoding: 'utf8' });
+  } catch (err) {
+    // No HTTP answer at all (a timeout, a DNS failure): curl's code is the news.
+    out = String(err.stdout || '');
+    curlExit = err.status;
+  }
+  const status = curlExit ? 0 : Number(out.slice(-3));
   if (status >= 200 && status < 300 && isZip(part)) {
     fs.renameSync(part, cache);
     return { status, buf: fs.readFileSync(cache) };
   }
+  const body = fs.existsSync(part) ? fs.readFileSync(part, 'latin1').slice(0, 65536) : '';
   fs.rmSync(part, { force: true });
-  return { status, challenged: /^cf-mitigated:\s*challenge\s*$/im.test(out), buf: Buffer.alloc(0) };
+  // A page Cloudflare generated itself -- a challenge, a block, a rate limit --
+  // is the WAF refusing this client, and says nothing about the archive. An
+  // error from ACM's own server, such as a 404 for a moved archive, is not.
+  const refusedBy = /^cf-mitigated:\s*challenge\s*$/im.test(out) ? 'a bot challenge'
+    : /cf-error-details|Cloudflare Ray ID|challenge-platform/i.test(body) ? 'a Cloudflare block page'
+    : null;
+  const title = curlExit ? `curl exit ${curlExit}` : (body.match(/<title>([^<]{0,120})<\/title>/i) || [])[1];
+  return { status, refusedBy, title: title && title.trim(), buf: Buffer.alloc(0) };
 }
 
 function browserLikeFetch(url, init) {
@@ -246,9 +261,13 @@ function buildProjectZip() {
     const acmUrl = Object.values(registry.sources || {})
       .map((s) => s.url).find((u) => u && new URL(u).hostname === ACM_HOST);
     const probe = curlToCache(acmUrl);
-    if (probe.challenged) {
-      acmRefused = `ACM's Cloudflare answered curl with a bot challenge (HTTP ${probe.status}); ` +
-        'Chrome, which the extension uses, is let through';
+    if (probe.status < 200 || probe.status >= 300) {
+      console.log(`  (ACM answered curl with HTTP ${probe.status}` +
+        `${probe.title ? ` "${probe.title}"` : ''}${probe.refusedBy ? `: ${probe.refusedBy}` : ''})`);
+    }
+    if (probe.refusedBy) {
+      acmRefused = `ACM's Cloudflare refused curl with ${probe.refusedBy} (HTTP ${probe.status}); ` +
+        'Chrome, which the extension uses, was let through when checked';
     }
   }
 
@@ -289,7 +308,7 @@ function buildProjectZip() {
     check('missing .bst reported as absent', bib.status, 'absent');
 
     console.log('\ndiff preview of the real upgrade');
-    const d = content.OTU.diff.compare(cls.localText, cls.newText);
+    const d = cls.newText ? content.OTU.diff.compare(cls.localText, cls.newText) : { ok: false };
     ok('diff computed for the v1.71 -> v2.20 upgrade',
       d.ok && (d.added > 0 || d.summaryOnly), JSON.stringify({ added: d.added, removed: d.removed, summaryOnly: !!d.summaryOnly }));
 
